@@ -11,24 +11,27 @@ import {
   type ChartOptions,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import {
+  Drop,
+  Flask,
+  Sun,
+  Thermometer,
+  Waves,
+} from '@phosphor-icons/react';
 import type { DeviceFeed } from '../hooks/useDeviceData';
 import { missionStateLabel } from '../types';
-import {
-  Badge,
-  Dot,
-  IconDroplet,
-  IconFlask,
-  IconHumidity,
-  IconSun,
-  IconThermometer,
-  Panel,
-  SkeletonRow,
-  StatCard,
-} from './primitives';
+import { RailViewLazy } from './RailViewLazy';
+import { Field, Panel, Readout, SkeletonRow, Tag } from './primitives';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
 const POTS = [1, 2, 3, 4, 5];
+const ICON = { size: 15, weight: 'regular' as const };
+
+/*  Mission states where the probe is in the soil: ST_SETTLE (4) through
+ *  ST_IRRIGATE_OFF (9). Matches probeIsPlanted() in AquaM_ESP32_A. */
+const PLANTED_FROM = 4;
+const PLANTED_TO = 9;
 
 export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
   const { data, connection, history, sendCommand } = feed;
@@ -43,13 +46,13 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
   const weather = a?.weather;
 
   const offline = connection === 'unconfigured' || connection === 'error';
+  const ms = status?.mission_state;
+  const planted = ms !== undefined && ms >= PLANTED_FROM && ms <= PLANTED_TO;
 
-  /*  pH is written as -1 when the probe reading was invalid (DOCUMENTATION §8).
-   *  Rendering -1 as a pH would be a wrong number a judge could read. */
+  /*  pH arrives as -1 when the probe reading was rejected (DOCUMENTATION §8).
+   *  Rendering that as a pH would be a wrong number a judge could read off. */
   const phInvalid = sensors?.pH !== undefined && sensors.pH < 0;
 
-  /*  ChartOptions<'line'> is strict about interaction.mode and scale shapes, so
-   *  the object is typed explicitly rather than inferred. */
   const chartOptions = useMemo<ChartOptions<'line'>>(
     () => ({
       responsive: true,
@@ -58,24 +61,31 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
       plugins: {
         legend: {
           display: true,
-          labels: { color: '#cbd5e1', boxWidth: 10, boxHeight: 10, usePointStyle: true },
+          align: 'end',
+          labels: {
+            color: '#7E8CA3',
+            boxWidth: 8,
+            boxHeight: 8,
+            usePointStyle: true,
+            font: { size: 11 },
+          },
         },
         tooltip: {
-          backgroundColor: 'rgba(10,15,26,0.95)',
-          borderColor: 'rgba(255,255,255,0.12)',
+          backgroundColor: '#0E141F',
+          borderColor: '#26303F',
           borderWidth: 1,
-          titleColor: '#f1f5f9',
-          bodyColor: '#cbd5e1',
+          titleColor: '#E6EBF2',
+          bodyColor: '#A7B2C4',
+          padding: 10,
+          displayColors: true,
         },
       },
       scales: {
-        x: {
-          ticks: { color: '#64748b', maxTicksLimit: 6 },
-          grid: { color: 'rgba(255,255,255,0.05)' },
-        },
+        x: { ticks: { color: '#3A465A', maxTicksLimit: 6, font: { size: 10 } }, grid: { display: false } },
         y: {
-          ticks: { color: '#64748b' },
-          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#3A465A', font: { size: 10 } },
+          grid: { color: 'rgba(38,48,63,0.5)' },
+          border: { display: false },
           suggestedMin: 0,
           suggestedMax: 100,
         },
@@ -84,46 +94,48 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
     [],
   );
 
-  const chartData = useMemo(() => {
-    const labels = history.map((s) =>
-      new Date(s.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    );
-    return {
-      labels,
+  const chartData = useMemo(
+    () => ({
+      labels: history.map((s) =>
+        new Date(s.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      ),
       datasets: [
         {
-          label: 'Soil moisture (%)',
+          label: 'Soil',
           data: history.map((s) => s.soil ?? null),
           borderColor: '#06D6A0',
-          backgroundColor: 'rgba(6,214,160,0.12)',
+          backgroundColor: 'rgba(6,214,160,0.10)',
+          borderWidth: 2,
           fill: true,
           tension: 0.35,
           pointRadius: 0,
           spanGaps: true,
         },
         {
-          label: 'Humidity (%)',
+          label: 'Humidity',
           data: history.map((s) => s.humidity ?? null),
           borderColor: '#4CC9F0',
-          backgroundColor: 'rgba(76,201,240,0.10)',
+          borderWidth: 1.5,
           fill: false,
           tension: 0.35,
           pointRadius: 0,
           spanGaps: true,
         },
         {
-          label: 'Temperature (C)',
+          label: 'Temp',
           data: history.map((s) => s.temperature ?? null),
-          borderColor: '#FFB703',
+          borderColor: '#F4A428',
+          borderWidth: 1.5,
+          borderDash: [3, 3],
           fill: false,
           tension: 0.35,
           pointRadius: 0,
           spanGaps: true,
-          borderDash: [4, 4],
         },
       ],
-    };
-  }, [history]);
+    }),
+    [history],
+  );
 
   const run = async (label: string, action: string, pot?: number) => {
     setBusy(label);
@@ -134,67 +146,74 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
   };
 
   return (
-    <div className="space-y-4">
-      {/* --- readings ---------------------------------------------------- */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard
-          label="Soil moisture"
-          value={sensors?.soil_moisture}
-          unit="%"
-          icon={<IconDroplet />}
-          invalid={status?.soil_fault}
-          invalidNote="probe fault"
+    <div className="space-y-5">
+      {/* --- the rail, and the readings taken from it -------------------- */}
+      <section className="surface overflow-hidden">
+        <RailViewLazy
+          currentPot={b?.current_pot ?? null}
+          planted={planted}
+          pumping={Boolean(status?.pump_active)}
+          moving={Boolean(b?.moving)}
+          degraded={offline || b?.current_pot === undefined}
         />
-        <StatCard
-          label="Temperature"
-          value={sensors?.temperature}
-          unit="C"
-          decimals={1}
-          icon={<IconThermometer />}
-          invalid={status?.dht_fault}
-          invalidNote="sensor fault"
-        />
-        <StatCard
-          label="Humidity"
-          value={sensors?.humidity}
-          unit="%"
-          decimals={0}
-          icon={<IconHumidity />}
-          invalid={status?.dht_fault}
-          invalidNote="sensor fault"
-        />
-        <StatCard
-          label="pH"
-          value={phInvalid ? undefined : sensors?.pH}
-          decimals={2}
-          icon={<IconFlask />}
-          invalid={phInvalid}
-          invalidNote="reading out of range"
-        />
-        <StatCard
-          label="Light"
-          value={sensors?.light_intensity}
-          unit="lx"
-          icon={<IconSun />}
-        />
-      </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* --- chart ----------------------------------------------------- */}
+        <div className="flex flex-wrap divide-x divide-ink-800 border-t border-ink-800 px-4 sm:px-5">
+          <Readout
+            label="Soil"
+            value={sensors?.soil_moisture}
+            unit="%"
+            icon={<Drop {...ICON} />}
+            invalid={status?.soil_fault}
+            invalidNote="probe fault"
+          />
+          <Readout
+            label="Temp"
+            value={sensors?.temperature}
+            unit="C"
+            decimals={1}
+            icon={<Thermometer {...ICON} />}
+            invalid={status?.dht_fault}
+            invalidNote="sensor fault"
+          />
+          <Readout
+            label="Humidity"
+            value={sensors?.humidity}
+            unit="%"
+            icon={<Waves {...ICON} />}
+            invalid={status?.dht_fault}
+            invalidNote="sensor fault"
+          />
+          <Readout
+            label="pH"
+            value={phInvalid ? undefined : sensors?.pH}
+            decimals={2}
+            icon={<Flask {...ICON} />}
+            invalid={phInvalid}
+            invalidNote="out of range"
+          />
+          <Readout
+            label="Light"
+            value={sensors?.light_intensity}
+            unit="lx"
+            icon={<Sun {...ICON} />}
+          />
+        </div>
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+        {/* --- history ----------------------------------------------------- */}
         <Panel
           title="Last 10 minutes"
-          className="lg:col-span-2"
           action={
-            <span className="text-xs text-slate-500">
-              {history.length > 0 ? `${history.length} samples` : 'no samples yet'}
+            <span className="num text-xs text-ink-400">
+              {history.length > 0 ? `${history.length} samples` : 'no samples'}
             </span>
           }
         >
-          <div className="h-64">
+          <div className="h-56 sm:h-64">
             {history.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-                <div className="skeleton h-40 w-full" aria-hidden="true" />
-                <p className="text-xs text-slate-500">
+              <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-ink-800">
+                <p className="max-w-xs text-center text-xs leading-relaxed text-ink-400">
                   {offline
                     ? 'History starts once the dashboard can reach the database.'
                     : 'Waiting for the first reading from ESP32 A.'}
@@ -204,134 +223,95 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
               <Line options={chartOptions} data={chartData} />
             )}
           </div>
-          <p className="mt-3 text-xs text-slate-500">
-            History is collected by this browser tab while it is open. The board does not
-            store one, so reloading the page starts it again.
+          <p className="mt-3 text-[11px] leading-relaxed text-ink-400">
+            Collected by this browser tab. The board keeps no history, so reloading starts it
+            again.
           </p>
         </Panel>
 
-        {/* --- decision -------------------------------------------------- */}
-        <Panel title="Latest decision">
-          {!decision ? (
-            <div className="space-y-2">
-              <SkeletonRow w="w-1/2" />
-              <SkeletonRow />
-              <SkeletonRow w="w-3/4" />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                <Badge tone={status?.decision_source === 'AI' ? 'good' : 'neutral'}>
-                  {status?.decision_source === 'AI' ? 'Gemini' : 'Local rule'}
-                </Badge>
-                {decision.pump_water && (
-                  <Badge tone="good">Water {(decision.water_duration ?? 0) / 1000}s</Badge>
+        {/* --- state ------------------------------------------------------- */}
+        <div className="space-y-5">
+          <Panel title="State">
+            <dl className="divide-y divide-ink-800">
+              <Field label="Mission">
+                {ms === undefined ? <SkeletonRow w="w-24" /> : missionStateLabel(ms)}
+              </Field>
+              <Field label="At pot">
+                {b?.current_pot === undefined ? <SkeletonRow w="w-6" /> : b.current_pot}
+              </Field>
+              <Field label="Pumps">
+                {status?.pump_active === undefined ? (
+                  <SkeletonRow w="w-14" />
+                ) : status.pump_active ? (
+                  <span className="text-warn">Running</span>
+                ) : (
+                  'Off'
                 )}
-                {decision.pump_fertilizer && (
-                  <Badge tone="good">
-                    Fertiliser {(decision.fertilizer_duration ?? 0) / 1000}s
-                  </Badge>
-                )}
-                {decision.fertilizer_deferred && <Badge tone="warn">Fertiliser deferred</Badge>}
+              </Field>
+              <Field label="Decision by">
+                {status?.decision_source ?? <SkeletonRow w="w-12" />}
+              </Field>
+              {b?.error ? (
+                <Field label="Error">
+                  <span className="text-fault">{b.error}</span>
+                </Field>
+              ) : null}
+            </dl>
+          </Panel>
+
+          <Panel title="Weather">
+            {!weather ? (
+              <div className="space-y-2.5">
+                <SkeletonRow w="w-2/3" />
+                <SkeletonRow w="w-1/2" />
               </div>
-              <p className="text-sm leading-relaxed text-slate-300">
-                {decision.reason || 'No reason recorded.'}
-              </p>
-              {decision.timestamp && (
-                <p className="font-mono text-[11px] text-slate-500">{decision.timestamp}</p>
-              )}
-            </div>
-          )}
-        </Panel>
+            ) : (
+              <dl className="divide-y divide-ink-800">
+                <Field label="Condition">{weather.condition || '--'}</Field>
+                <Field label="Outside">
+                  {weather.temp_out !== undefined ? `${weather.temp_out.toFixed(1)} C` : '--'}
+                </Field>
+                <Field label="Humidity">
+                  {weather.humidity_out !== undefined
+                    ? `${weather.humidity_out.toFixed(0)} %`
+                    : '--'}
+                </Field>
+              </dl>
+            )}
+          </Panel>
+        </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* --- robot ----------------------------------------------------- */}
-        <Panel title="Robot">
-          <dl className="space-y-2.5 text-sm">
-            <Row label="Mission">
-              {status?.mission_state === undefined ? (
-                <SkeletonRow w="w-24" />
-              ) : (
-                missionStateLabel(status.mission_state)
-              )}
-            </Row>
-            <Row label="At pot">
-              {b?.current_pot === undefined ? <SkeletonRow w="w-8" /> : b.current_pot}
-            </Row>
-            <Row label="Moving">
-              {b?.moving === undefined ? (
-                <SkeletonRow w="w-10" />
-              ) : (
-                <span className="inline-flex items-center gap-1.5">
-                  <Dot tone={b.moving ? 'warn' : 'good'} pulse={b.moving} />
-                  {b.moving ? 'Yes' : 'No'}
-                </span>
-              )}
-            </Row>
-            <Row label="Pumps">
-              {status?.pump_active === undefined ? (
-                <SkeletonRow w="w-14" />
-              ) : (
-                <span className="inline-flex items-center gap-1.5">
-                  <Dot tone={status.pump_active ? 'warn' : 'good'} pulse={status.pump_active} />
-                  {status.pump_active ? 'Running' : 'Off'}
-                </span>
-              )}
-            </Row>
-            {b?.error ? (
-              <Row label="Error">
-                <span className="text-fault">{b.error}</span>
-              </Row>
-            ) : null}
-          </dl>
-        </Panel>
-
-        {/* --- weather --------------------------------------------------- */}
-        <Panel title="Weather">
-          {!weather ? (
-            <div className="space-y-2">
-              <SkeletonRow w="w-2/3" />
-              <SkeletonRow w="w-1/2" />
-            </div>
-          ) : (
-            <dl className="space-y-2.5 text-sm">
-              <Row label="Condition">{weather.condition || '--'}</Row>
-              <Row label="Outside">
-                {weather.temp_out !== undefined ? `${weather.temp_out.toFixed(1)} C` : '--'}
-              </Row>
-              <Row label="Humidity">
-                {weather.humidity_out !== undefined ? `${weather.humidity_out.toFixed(0)} %` : '--'}
-              </Row>
-            </dl>
-          )}
-        </Panel>
-
-        {/* --- control --------------------------------------------------- */}
+      <div className="grid gap-5 lg:grid-cols-[1fr_1.6fr]">
+        {/* --- control ----------------------------------------------------- */}
         <Panel title="Control">
-          <p className="mb-3 text-xs text-slate-500">
-            Commands are written to Firebase. ESP32 A polls every 3 seconds and only while
-            idle, so expect a short delay.
-          </p>
-          <div className="mb-3 flex flex-wrap gap-2">
-            {POTS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                disabled={offline || busy !== null}
-                onClick={() => run(`pot ${p}`, 'goto', p)}
-                className="min-h-[44px] min-w-[44px] cursor-pointer rounded-xl border border-hair bg-white/[0.04] px-4 font-mono text-sm text-slate-200 transition-colors duration-200 hover:border-aqua/50 hover:bg-aqua/10 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {p}
-              </button>
-            ))}
+          <div className="mb-4 grid grid-cols-5 gap-1.5">
+            {POTS.map((p) => {
+              const here = b?.current_pot === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  disabled={offline || busy !== null}
+                  onClick={() => run(`pot ${p}`, 'goto', p)}
+                  className={`num min-h-[44px] cursor-pointer rounded-lg border text-sm transition-all duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 ${
+                    here
+                      ? 'border-aqua/50 bg-aqua-wash text-aqua'
+                      : 'border-ink-700 bg-ink-850 text-ink-300 hover:border-ink-600 hover:text-ink-100'
+                  }`}
+                >
+                  {p}
+                </button>
+              );
+            })}
           </div>
-          <div className="flex flex-wrap gap-2">
+
+          <div className="grid grid-cols-2 gap-1.5">
             <button
               type="button"
               disabled={offline || busy !== null}
               onClick={() => run('return home', 'return')}
-              className="min-h-[44px] flex-1 cursor-pointer rounded-xl border border-hair bg-white/[0.04] px-4 text-sm text-slate-200 transition-colors duration-200 hover:border-sky/50 hover:bg-sky/10 disabled:cursor-not-allowed disabled:opacity-40"
+              className="min-h-[44px] cursor-pointer rounded-lg border border-ink-700 bg-ink-850 px-3 text-sm text-ink-300 transition-all duration-200 hover:border-ink-600 hover:text-ink-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Return home
             </button>
@@ -339,32 +319,57 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
               type="button"
               disabled={offline || busy !== null}
               onClick={() => run('stop', 'stop')}
-              className="min-h-[44px] flex-1 cursor-pointer rounded-xl border border-fault/40 bg-fault/10 px-4 text-sm font-medium text-fault transition-colors duration-200 hover:bg-fault/20 disabled:cursor-not-allowed disabled:opacity-40"
+              className="min-h-[44px] cursor-pointer rounded-lg border border-fault/40 bg-fault/10 px-3 text-sm font-medium text-fault transition-all duration-200 hover:bg-fault/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Stop
             </button>
           </div>
 
-          <p aria-live="polite" className="mt-3 min-h-[1.25rem] text-xs text-slate-400">
+          <p aria-live="polite" className="mt-3 min-h-[1.1rem] text-[11px] text-ink-400">
             {busy ? `Sending ${busy}...` : notice}
           </p>
 
-          {offline && (
-            <p className="mt-2 text-xs text-warn">
-              Controls are disabled because the database cannot be reached.
-            </p>
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-400">
+            {offline
+              ? 'Disabled: the database cannot be reached.'
+              : 'ESP32 A polls every 3 seconds and only while idle, so expect a short delay.'}
+          </p>
+        </Panel>
+
+        {/* --- decision ---------------------------------------------------- */}
+        <Panel title="Latest decision">
+          {!decision ? (
+            <div className="space-y-2.5">
+              <SkeletonRow w="w-1/3" />
+              <SkeletonRow />
+              <SkeletonRow w="w-4/5" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-1.5">
+                <Tag tone={status?.decision_source === 'AI' ? 'accent' : 'neutral'}>
+                  {status?.decision_source === 'AI' ? 'Gemini' : 'Local rule'}
+                </Tag>
+                {decision.pump_water && (
+                  <Tag tone="accent">Water {(decision.water_duration ?? 0) / 1000}s</Tag>
+                )}
+                {decision.pump_fertilizer && (
+                  <Tag tone="accent">
+                    Fertiliser {(decision.fertilizer_duration ?? 0) / 1000}s
+                  </Tag>
+                )}
+                {decision.fertilizer_deferred && <Tag tone="warn">Fertiliser deferred</Tag>}
+              </div>
+              <p className="text-sm leading-relaxed text-ink-300">
+                {decision.reason || 'No reason recorded.'}
+              </p>
+              {decision.timestamp && (
+                <p className="num text-[11px] text-ink-400">{decision.timestamp}</p>
+              )}
+            </div>
           )}
         </Panel>
       </div>
-    </div>
-  );
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <dt className="text-slate-400">{label}</dt>
-      <dd className="text-right font-mono text-slate-100">{children}</dd>
     </div>
   );
 }

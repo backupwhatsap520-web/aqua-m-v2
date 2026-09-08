@@ -1,191 +1,192 @@
-import { useRef } from 'react';
-import { motion, useScroll, useTransform, type MotionValue } from 'motion/react';
-import { useReducedMotion } from '../hooks/useReducedMotion';
+import { motion } from 'motion/react';
+import { ArrowsLeftRight, CloudSlash, ShieldCheck } from '@phosphor-icons/react';
 import type { DeviceFeed } from '../hooks/useDeviceData';
-import { Badge, Panel } from './primitives';
+import { useReducedMotion } from '../hooks/useReducedMotion';
+import { RailViewLazy } from './RailViewLazy';
 
-/*  Drop exists SOLELY so that useTransform is not called inside .map().
+/*  The judge-facing side of the dashboard.
  *
- *  Hooks must run in the same order on every render. Calling useTransform once
- *  per item inside a loop makes the hook count depend on the list length, so
- *  the first time that list changes size React reads the wrong hook state and
- *  the component breaks — usually with a confusing error far from the cause.
- *
- *  Moving the hook into a child component gives each drop its own stable hook
- *  order. Do not "simplify" this back into the loop.
+ *  Deliberately NOT built from the same repeated card grid as the monitoring
+ *  tab. Four sections, four different layout families: asymmetric split hero,
+ *  offset two-column with a numbered spine, a horizontal step sequence, and a
+ *  figures-and-prose block. One eyebrow on the whole page.
  */
-function Drop({
-  progress,
-  x,
-  delay,
-  size,
-  reduce,
-}: {
-  progress: MotionValue<number>;
-  x: number;
-  delay: number;
-  size: number;
-  reduce: boolean;
-}) {
-  const y = useTransform(progress, [0, 1], [0, 120 + delay * 90]);
-  const opacity = useTransform(progress, [0, 0.15, 0.85, 1], [0, 0.55, 0.55, 0]);
 
-  return (
-    <motion.span
-      aria-hidden="true"
-      className="absolute top-0 rounded-full bg-gradient-to-b from-sky/70 to-aqua/10"
-      style={{
-        left: `${x}%`,
-        width: size,
-        height: size * 2.6,
-        y: reduce ? 0 : y,
-        opacity: reduce ? 0.25 : opacity,
-      }}
-    />
-  );
-}
+const EASE = [0.16, 1, 0.3, 1] as const;
 
-const DROPS = [
-  { x: 8, delay: 0.1, size: 5 },
-  { x: 21, delay: 0.6, size: 3 },
-  { x: 37, delay: 0.25, size: 6 },
-  { x: 52, delay: 0.8, size: 4 },
-  { x: 68, delay: 0.4, size: 5 },
-  { x: 81, delay: 0.15, size: 3 },
-  { x: 93, delay: 0.7, size: 4 },
-];
+/*  Scroll reveal, for sections below the fold. */
+const reveal = (delay = 0) => ({
+  initial: { opacity: 0, y: 18 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.25 },
+  transition: { duration: 0.55, delay, ease: EASE },
+});
 
-const POTS = [1, 2, 3, 4, 5];
+/*  Entry animation for the hero.
+ *
+ *  Deliberately NOT whileInView. The hero is on screen at load, so gating it
+ *  behind an intersection threshold means it either flashes or, if the element
+ *  starts at zero height (the 3D canvas sizes itself after mount), never
+ *  crosses the threshold at all and stays invisible. That is exactly what
+ *  happened here the first time. */
+const enter = (delay = 0) => ({
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55, delay, ease: EASE },
+});
 
 export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
   const reduce = useReducedMotion();
-  const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end start'],
-  });
-
-  const currentPot = feed.data?.esp32_b?.status?.current_pot;
+  const b = feed.data?.esp32_b?.status;
+  const status = feed.data?.esp32_a?.status;
+  const ms = status?.mission_state;
+  const anim = (delay = 0) => (reduce ? {} : reveal(delay));
+  const intro = (delay = 0) => (reduce ? {} : enter(delay));
 
   return (
-    <div className="space-y-4">
-      {/* --- hero -------------------------------------------------------- */}
-      <div ref={heroRef} className="glass relative overflow-hidden p-6 sm:p-10">
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          {DROPS.map((d) => (
-            <Drop
-              key={`${d.x}-${d.delay}`}
-              progress={scrollYProgress}
-              x={d.x}
-              delay={d.delay}
-              size={d.size}
-              reduce={reduce}
-            />
+    <div className="space-y-20 pb-12 sm:space-y-28">
+      {/* --- 1. hero: asymmetric split, the rail carries the visual weight -- */}
+      <section className="grid items-center gap-8 lg:grid-cols-[1fr_1.15fr] lg:gap-12">
+        <motion.div {...intro()}>
+          <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.18em] text-aqua">
+            ISIF / IYSA
+          </p>
+          <h1 className="text-4xl font-semibold leading-[1.05] tracking-tightest text-ink-100 sm:text-5xl lg:text-6xl">
+            Five pots.
+            <br />
+            One robot.
+            <br />
+            <span className="text-aqua">No guessing.</span>
+          </h1>
+          <p className="mt-6 max-w-md text-base leading-relaxed text-ink-300">
+            A rail-guided robot plants a probe in each pot, asks Gemini what the plant needs,
+            and waters it. Lose the network and a rule on the board takes over.
+          </p>
+        </motion.div>
+
+        <motion.div {...intro(0.12)} className="surface overflow-hidden">
+          <RailViewLazy
+            currentPot={b?.current_pot ?? 3}
+            planted={ms !== undefined && ms >= 4 && ms <= 9}
+            pumping={Boolean(status?.pump_active)}
+            moving={Boolean(b?.moving)}
+            degraded={false}
+          />
+        </motion.div>
+      </section>
+
+      {/* --- 2. how it decides: offset columns with a numbered spine ------- */}
+      <section className="grid gap-10 lg:grid-cols-[0.85fr_1fr] lg:gap-16">
+        <motion.h2
+          {...anim()}
+          className="text-2xl font-semibold leading-tight tracking-tightest text-ink-100 sm:text-3xl"
+        >
+          Two ways to decide, and a rule about which one wins
+        </motion.h2>
+
+        <div className="space-y-8">
+          {[
+            {
+              icon: <CloudSlash size={20} className="text-aqua" />,
+              head: 'Gemini decides how long to water',
+              body: 'The board posts soil, pH, temperature, humidity, light and the local weather straight to Google AI Studio. No server sits in between. The reply is clamped to ten seconds of water and five of fertiliser before it can reach a pump.',
+            },
+            {
+              icon: <ArrowsLeftRight size={20} className="text-aqua" />,
+              head: 'The board decides when the network fails',
+              body: 'Below 30 percent soil moisture it waters for eight seconds, between 30 and 60 for four, above that not at all. Over 35 degrees adds two seconds. Fertiliser has no offline rule on purpose: guessing a nutrient dose from a moisture reading is worse than waiting.',
+            },
+            {
+              icon: <ShieldCheck size={20} className="text-aqua" />,
+              head: 'The firmware always has the last word',
+              body: 'Relays are active-low, so a reset opens them. A watchdog runs every loop and can only ever turn a pump off. No network call is issued while a pump is running, because a slow reply would outlast the watering it was meant to control.',
+            },
+          ].map((item, i) => (
+            <motion.article
+              key={item.head}
+              {...anim(0.08 * i)}
+              className="rule-l pl-5 sm:pl-6"
+            >
+              <div className="mb-2 flex items-center gap-2.5">
+                {item.icon}
+                <h3 className="text-base font-medium text-ink-100">{item.head}</h3>
+              </div>
+              <p className="max-w-xl text-sm leading-relaxed text-ink-300">{item.body}</p>
+            </motion.article>
           ))}
         </div>
+      </section>
 
-        <div className="relative">
-          <Badge tone="good">ISIF / IYSA</Badge>
-          <h1 className="mt-4 text-3xl font-bold leading-tight text-slate-50 sm:text-4xl">
-            Aqua-M V2
-          </h1>
-          <p className="mt-1 bg-aqua-gradient bg-clip-text text-lg font-semibold text-transparent">
-            AI-Driven Hybrid Mobile Smart Irrigation Robot
-          </p>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300">
-            A rail-guided robot drives between five pots, pushes a probe into the soil at each
-            one, asks Gemini what the plant needs, and waters it. When the network is down a
-            rule that runs entirely on the board takes over, so the plants still get water.
-          </p>
+      {/* --- 3. the run, as a horizontal sequence -------------------------- */}
+      <section>
+        <motion.h2
+          {...anim()}
+          className="mb-8 text-2xl font-semibold tracking-tightest text-ink-100 sm:text-3xl"
+        >
+          One visit to one pot
+        </motion.h2>
+
+        <div className="grid gap-px overflow-hidden rounded-xl border border-ink-800 bg-ink-800 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { t: 'Drive', d: 'ESP32 A sends TARGET:3. The motion board counts checkpoint lines under the rail until it reaches the third.' },
+            { t: 'Plant', d: 'The arm lowers the probe into the soil and reports SENSOR_READY. Two seconds to settle before anything is read.' },
+            { t: 'Read and decide', d: 'Soil, pH, air and light are sampled, then either Gemini or the local rule sets a duration.' },
+            { t: 'Water and lift', d: 'The pump runs for exactly that long, the arm lifts, and the robot is free to move again.' },
+          ].map((step, i) => (
+            <motion.div key={step.t} {...anim(0.06 * i)} className="bg-ink-900 p-5">
+              <span className="num mb-3 block text-xs text-aqua">{`0${i + 1}`}</span>
+              <h3 className="mb-2 text-sm font-medium text-ink-100">{step.t}</h3>
+              <p className="text-[13px] leading-relaxed text-ink-400">{step.d}</p>
+            </motion.div>
+          ))}
         </div>
-      </div>
+      </section>
 
-      {/* --- how it works ------------------------------------------------ */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Panel title="Two boards, one rail">
-          <p className="text-sm leading-relaxed text-slate-300">
-            ESP32 A holds every sensor and both pumps. ESP32 B holds the wheels and the arm.
-            They talk over UART at 115200, which keeps working with the Wi-Fi switched off.
-          </p>
-        </Panel>
-        <Panel title="Decides twice">
-          <p className="text-sm leading-relaxed text-slate-300">
-            Gemini decides how long to water. If it cannot be reached, a local threshold rule
-            waters on soil moisture alone. Fertilising has no local rule on purpose — guessing
-            a nutrient dose from a moisture reading is worse than waiting.
-          </p>
-        </Panel>
-        <Panel title="Safe by construction">
-          <p className="text-sm leading-relaxed text-slate-300">
-            Relays are active-LOW, so a reset opens them. An actuator watchdog runs every loop
-            and can only ever turn pumps off. No network call is issued while a pump runs.
-          </p>
-        </Panel>
-      </div>
+      {/* --- 4. what is proven, in figures and plain sentences ------------- */}
+      <section className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
+        <div>
+          <motion.h2
+            {...anim()}
+            className="mb-6 text-2xl font-semibold tracking-tightest text-ink-100 sm:text-3xl"
+          >
+            What has actually been checked
+          </motion.h2>
 
-      {/* --- rail -------------------------------------------------------- */}
-      <Panel
-        title="The rail"
-        action={
-          <span className="text-xs text-slate-500">
-            {currentPot === undefined ? 'position unknown' : `robot at pot ${currentPot}`}
-          </span>
-        }
-      >
-        <ol className="flex items-center gap-2 sm:gap-4">
-          {POTS.map((p, i) => {
-            const here = currentPot === p;
-            return (
-              <li key={p} className="flex flex-1 items-center gap-2 sm:gap-4">
-                <div
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border font-mono text-sm transition-colors duration-200 ${
-                    here
-                      ? 'border-aqua bg-aqua/15 text-aqua'
-                      : 'border-hair bg-white/[0.03] text-slate-400'
-                  }`}
-                >
-                  {p}
-                  {here && <span className="sr-only"> (robot is here)</span>}
-                </div>
-                {i < POTS.length - 1 && (
-                  <div className="h-px flex-1 bg-hair" aria-hidden="true" />
-                )}
-              </li>
-            );
-          })}
-        </ol>
-        <p className="mt-4 text-xs leading-relaxed text-slate-500">
-          Position is counted from checkpoint lines, not measured absolutely. One missed line
-          leaves the count wrong until the next power cycle — see RECOMMENDATIONS items 2
-          and 29.
-        </p>
-      </Panel>
+          <motion.dl {...anim(0.08)} className="grid grid-cols-2 gap-6">
+            {[
+              { n: '13', l: 'build combinations, all passing', s: 'two ESP32 core generations, two ArduinoJson versions' },
+              { n: '172', l: 'software-in-the-loop checks', s: 'every safety invariant among them' },
+              { n: '44%', l: 'of flash used on ESP32 A', s: 'room left for the whole system again' },
+              { n: '0', l: 'hardware measurements', s: 'the boards had not arrived' },
+            ].map((f) => (
+              <div key={f.l}>
+                <dt className="num text-3xl font-medium text-ink-100 sm:text-4xl">{f.n}</dt>
+                <dd className="mt-1.5 text-sm text-ink-300">{f.l}</dd>
+                <dd className="mt-0.5 text-xs leading-relaxed text-ink-400">{f.s}</dd>
+              </div>
+            ))}
+          </motion.dl>
+        </div>
 
-      {/* --- honesty ----------------------------------------------------- */}
-      <Panel title="What has and has not been verified">
-        <ul className="space-y-2 text-sm leading-relaxed text-slate-300">
-          <li className="flex gap-2">
-            <span className="text-aqua">+</span>
-            Both firmware sketches compile against ESP32 core 2.0.17 and 3.3.11, and against
-            ArduinoJson 6 and 7 — 13 of 13 build combinations.
-          </li>
-          <li className="flex gap-2">
-            <span className="text-aqua">+</span>
-            172 software-in-the-loop checks pass, including every safety invariant: pump
-            duration clamping, cooldown behaviour, and no network call while a pump runs.
-          </li>
-          <li className="flex gap-2">
-            <span className="text-warn">!</span>
-            Checkpoint counting degrades under infrared dropout: a third of crossings are
-            miscounted at 5 % sample loss in simulation.
-          </li>
-          <li className="flex gap-2">
-            <span className="text-slate-500">-</span>
-            None of it has run on hardware. Every figure above is simulation, labelled SIL in
-            the repository, and no timing here was measured on a board.
-          </li>
-        </ul>
-      </Panel>
+        <motion.div {...anim(0.12)} className="space-y-4 text-sm leading-relaxed text-ink-300">
+          <p>
+            Every figure on this page comes from simulation, not from a robot. The firmware
+            was compiled and driven on a PC with a virtual clock, which is how a two-minute
+            pump cooldown can be tested in one line instead of two minutes.
+          </p>
+          <p>
+            That rules out whole classes of logic bug. It does not tell you what the pump
+            does at twenty percent battery, whether the infrared sensors survive stage
+            lighting, or how the servo behaves when the motors draw current.
+          </p>
+          <p className="border-l-2 border-warn/40 pl-4 text-ink-400">
+            One finding is worth knowing before a demo. Under simulated infrared dropout the
+            checkpoint counter misses a third of crossings at five percent sample loss. Since
+            position is counted rather than measured, one missed line leaves the robot at the
+            wrong pot for the rest of the run.
+          </p>
+        </motion.div>
+      </section>
     </div>
   );
 }

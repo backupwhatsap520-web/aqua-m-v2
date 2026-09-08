@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,43 +7,32 @@
     color-scheme: dark;
   }
 
-  html,
-  body,
-  #root {
-    height: 100%;
-  }
-
   body {
-    @apply bg-abyss text-slate-100 font-sans antialiased;
+    @apply bg-ink-950 text-ink-100 font-sans antialiased;
   }
 
-  /*  Two soft light sources behind the glass, so panels feel lit from the page
-   *  rather than each carrying its own gradient.
-   *
-   *  On a fixed pseudo-element rather than `body { background-attachment: fixed }`
-   *  because the latter forces a repaint of the whole background on every
-   *  scroll frame, which is measurably more expensive next to a page full of
-   *  backdrop-filter panels. A real fixed layer is composited once. */
+  /*  One soft light source, low and off-centre, so the page has a direction
+   *  instead of a symmetric glow behind everything. Fixed layer rather than
+   *  background-attachment, which repaints on every scroll frame. */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background-image:
-      radial-gradient(60rem 40rem at 12% -10%, rgba(6, 214, 160, 0.10), transparent 60%),
-      radial-gradient(50rem 36rem at 88% 8%, rgba(76, 201, 240, 0.10), transparent 60%);
+    background: radial-gradient(
+      70rem 50rem at 18% -12%,
+      rgba(6, 214, 160, 0.07),
+      transparent 62%
+    );
   }
 
-  /*  Visible focus everywhere, on the accent so it reads on the dark ground.
-   *  Never remove this — keyboard users are the ones who need it, and a judge
-   *  tabbing through the control panel is exactly that. */
+  /*  Visible focus, always. A judge tabbing through the control panel is
+   *  exactly the person who needs it. */
   :focus-visible {
-    @apply outline-none ring-2 ring-aqua ring-offset-2 ring-offset-abyss rounded-md;
+    @apply outline-none ring-2 ring-aqua ring-offset-2 ring-offset-ink-950;
   }
 
-  /*  Respect the OS setting globally as a backstop; components also check it
-   *  in JS so they can render a final state rather than a frozen midpoint. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -59,37 +46,31 @@
 }
 
 @layer components {
-  /*  The one glass recipe, used by every panel so they read as one surface:
-   *  14px blur, 1px hairline, slight inner highlight along the top edge. */
-  .glass {
-    @apply rounded-2xl border border-hair bg-panel backdrop-blur-glass;
-    box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-      0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  /*  Numbers are monospace and tabular everywhere, so a reading that changes
+   *  does not shift the layout under the reader's eye. */
+  .num {
+    @apply font-mono tabular-nums tracking-tightest;
   }
 
-  .stat-label {
-    @apply text-[11px] uppercase tracking-[0.14em] text-slate-400;
+  /*  Data does not live in cards. Readings are separated by hairlines and
+   *  space; a card is reserved for something that genuinely sits above the
+   *  page, like the 3D view or the control panel. */
+  .rule-l {
+    @apply border-l border-ink-800;
   }
 
-  .stat-value {
-    @apply font-mono text-3xl font-semibold tabular-nums text-slate-50;
+  .surface {
+    @apply rounded-xl border border-ink-800 bg-ink-900/70;
   }
 
-  /*  Skeleton shimmer for the unconfigured / connecting state. */
   .skeleton {
-    @apply relative overflow-hidden rounded-md bg-white/[0.06];
+    @apply relative overflow-hidden rounded bg-ink-800/60;
   }
 
   .skeleton::after {
     content: '';
     @apply absolute inset-0 animate-shimmer;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.08),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
     transform: translateX(-100%);
   }
 }

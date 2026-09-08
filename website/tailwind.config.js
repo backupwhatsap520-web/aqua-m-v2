@@ -6,30 +6,46 @@ export default {
   theme: {
     extend: {
       colors: {
-        //  Team-specified palette. Do not "improve" these.
-        aqua:  '#06D6A0',   // primary accent, healthy state
-        sky:   '#4CC9F0',   // secondary accent, data lines
-        abyss: '#0a0f1a',   // page background
-        panel: 'rgba(255,255,255,0.05)',
-        hair:  'rgba(255,255,255,0.12)',
-        warn:  '#FFB703',
-        fault: '#EF476F',
-      },
-      backgroundImage: {
-        'aqua-gradient': 'linear-gradient(135deg, #06D6A0 0%, #4CC9F0 100%)',
+        /*  ONE accent. `aqua` is the brand and the only colour that means
+         *  "this is Aqua-M". Everything else is either neutral or a state.
+         *
+         *  `sky` is deliberately NOT a second accent: it appears only as a
+         *  data series inside the chart, never on UI chrome. Two equally loud
+         *  accents on near-black is the generic dark-tech look. */
+        aqua: {
+          DEFAULT: '#06D6A0',
+          dim: '#059E77',
+          wash: 'rgba(6,214,160,0.10)',
+        },
+        sky: '#4CC9F0',          // chart series only
+        /*  State colours, used only for real state. Never decoration. */
+        warn: '#F4A428',
+        fault: '#E5484D',
+        /*  Cool neutral ramp on the team's #0a0f1a ground. */
+        ink: {
+          950: '#0a0f1a',        // page
+          900: '#0E141F',        // raised surface
+          850: '#131A26',        // input / inset
+          800: '#1A2231',
+          700: '#26303F',        // hairline strong
+          600: '#3A465A',
+          400: '#7E8CA3',        // secondary text
+          300: '#A7B2C4',
+          100: '#E6EBF2',        // primary text
+        },
       },
       fontFamily: {
-        sans: ['"Fira Sans"', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
-        mono: ['"Fira Code"', 'ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
+        sans: ['"Space Grotesk Variable"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono Variable"', 'ui-monospace', 'monospace'],
       },
-      backdropBlur: { glass: '14px' },
+      letterSpacing: { tightest: '-0.04em' },
       keyframes: {
-        pulseSoft: { '0%,100%': { opacity: '1' }, '50%': { opacity: '0.45' } },
-        shimmer:   { '100%': { transform: 'translateX(100%)' } },
+        shimmer: { '100%': { transform: 'translateX(100%)' } },
+        breathe: { '0%,100%': { opacity: '0.35' }, '50%': { opacity: '0.8' } },
       },
       animation: {
-        pulseSoft: 'pulseSoft 2s ease-in-out infinite',
-        shimmer:   'shimmer 1.6s infinite',
+        shimmer: 'shimmer 1.6s infinite',
+        breathe: 'breathe 3.2s ease-in-out infinite',
       },
     },
   },

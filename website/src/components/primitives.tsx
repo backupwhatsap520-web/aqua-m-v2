@@ -1,38 +1,20 @@
 import type { ReactNode } from 'react';
 import { useCountUp } from '../hooks/useCountUp';
 
-/*  Shared building blocks. Icons are inline SVG rather than emoji — an emoji
- *  renders differently on every machine and reads as a character to a screen
- *  reader. */
+/*  Shared parts.
+ *
+ *  Two rules this file exists to enforce:
+ *
+ *  1. A reading is not a card. Readings sit in a row separated by a hairline
+ *     and space. A bordered container is reserved for something that genuinely
+ *     sits above the page: the rail view, the control panel.
+ *  2. A value that is missing and a value that is faulty are different things
+ *     and must not look the same. Missing renders a skeleton. Faulty renders a
+ *     dash and says what is wrong.
+ */
 
-export function Panel({
-  title,
-  children,
-  className = '',
-  action,
-}: {
-  title?: string;
-  children: ReactNode;
-  className?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <section className={`glass p-4 sm:p-5 ${className}`}>
-      {(title || action) && (
-        <header className="mb-4 flex items-center justify-between gap-3">
-          {title && <h2 className="text-sm font-semibold text-slate-200">{title}</h2>}
-          {action}
-        </header>
-      )}
-      {children}
-    </section>
-  );
-}
-
-/*  A single reading. `value` undefined means "no data yet" and renders a
- *  skeleton — never a zero, which would be a lie a judge could read off the
- *  screen. */
-export function StatCard({
+/** One instrument reading in the top strip. */
+export function Readout({
   label,
   value,
   unit,
@@ -51,31 +33,28 @@ export function StatCard({
 }) {
   const animated = useCountUp(value);
 
-  /*  `invalid` is checked before `loading`, and the order matters. A fault is
-   *  reported by the board *with* the value withheld — an out-of-range pH
-   *  arrives as -1, which the caller turns into `undefined`. Checking loading
-   *  first would render a skeleton that never resolves, so a judge would see a
-   *  card stuck loading instead of a named fault. */
+  /*  Order matters: a fault arrives with the value withheld, so checking
+   *  loading first would render a skeleton that never resolves. */
   const loading = value === undefined && !invalid;
 
   return (
-    <div className="glass p-4">
-      <div className="mb-2 flex items-center gap-2">
-        {icon && <span className="text-aqua">{icon}</span>}
-        <span className="stat-label">{label}</span>
+    <div className="flex-1 px-4 py-3 first:pl-0 sm:px-5 lg:px-6">
+      <div className="mb-2 flex items-center gap-1.5 text-ink-400">
+        {icon}
+        <span className="text-[11px] font-medium tracking-wide">{label}</span>
       </div>
 
       {invalid ? (
-        <div>
-          <p className="font-mono text-2xl font-semibold text-warn">--</p>
-          {invalidNote && <p className="mt-1 text-xs text-warn/80">{invalidNote}</p>}
-        </div>
+        <>
+          <p className="num text-2xl font-medium text-warn sm:text-3xl">--</p>
+          {invalidNote && <p className="mt-0.5 text-[11px] text-warn/75">{invalidNote}</p>}
+        </>
       ) : loading ? (
-        <div className="skeleton h-9 w-24" aria-hidden="true" />
+        <div className="skeleton h-8 w-20" aria-hidden="true" />
       ) : (
-        <p className="stat-value">
+        <p className="num text-2xl font-medium text-ink-100 sm:text-3xl">
           {animated.toFixed(decimals)}
-          {unit && <span className="ml-1 text-base font-normal text-slate-400">{unit}</span>}
+          {unit && <span className="ml-1 text-sm font-normal text-ink-400">{unit}</span>}
         </p>
       )}
 
@@ -84,82 +63,64 @@ export function StatCard({
   );
 }
 
-export function Badge({
+/** A raised panel. Used sparingly, where elevation means something. */
+export function Panel({
+  title,
+  children,
+  className = '',
+  action,
+}: {
+  title?: string;
+  children: ReactNode;
+  className?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <section className={`surface p-4 sm:p-5 ${className}`}>
+      {(title || action) && (
+        <header className="mb-4 flex items-baseline justify-between gap-3">
+          {title && <h2 className="text-sm font-semibold text-ink-100">{title}</h2>}
+          {action}
+        </header>
+      )}
+      {children}
+    </section>
+  );
+}
+
+/** A row of label and value, hairline-separated by the parent. */
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-2">
+      <dt className="text-sm text-ink-400">{label}</dt>
+      <dd className="num text-right text-sm text-ink-100">{children}</dd>
+    </div>
+  );
+}
+
+export function Tag({
   tone = 'neutral',
   children,
 }: {
-  tone?: 'good' | 'warn' | 'bad' | 'neutral';
+  tone?: 'accent' | 'warn' | 'fault' | 'neutral';
   children: ReactNode;
 }) {
   const tones = {
-    good: 'bg-aqua/15 text-aqua border-aqua/30',
-    warn: 'bg-warn/15 text-warn border-warn/30',
-    bad: 'bg-fault/15 text-fault border-fault/30',
-    neutral: 'bg-white/5 text-slate-300 border-hair',
+    accent: 'border-aqua/35 bg-aqua-wash text-aqua',
+    warn: 'border-warn/35 bg-warn/10 text-warn',
+    fault: 'border-fault/35 bg-fault/10 text-fault',
+    neutral: 'border-ink-700 bg-ink-850 text-ink-300',
   } as const;
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${tones[tone]}`}
+      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${tones[tone]}`}
     >
       {children}
     </span>
   );
 }
 
-/*  Status dot. The label always carries the meaning as text as well — colour
- *  alone must never be the only signal. */
-export function Dot({ tone, pulse }: { tone: 'good' | 'warn' | 'bad'; pulse?: boolean }) {
-  const c = { good: 'bg-aqua', warn: 'bg-warn', bad: 'bg-fault' }[tone];
-  return (
-    <span
-      aria-hidden="true"
-      className={`inline-block h-2 w-2 shrink-0 rounded-full ${c} ${pulse ? 'animate-pulseSoft' : ''}`}
-    />
-  );
-}
-
 export function SkeletonRow({ w = 'w-full' }: { w?: string }) {
-  return <div className={`skeleton h-4 ${w}`} aria-hidden="true" />;
+  return <div className={`skeleton h-3.5 ${w}`} aria-hidden="true" />;
 }
-
-/* --- icons (Lucide-style, 1.5px stroke) ---------------------------------- */
-const ico = {
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.5,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-};
-
-export const IconDroplet = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" {...ico} aria-hidden="true">
-    <path d="M12 2.7 6.8 9.3a7 7 0 1 0 10.4 0z" />
-  </svg>
-);
-
-export const IconThermometer = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" {...ico} aria-hidden="true">
-    <path d="M14 14.8V4a2 2 0 1 0-4 0v10.8a4 4 0 1 0 4 0z" />
-  </svg>
-);
-
-export const IconHumidity = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" {...ico} aria-hidden="true">
-    <path d="M12 3.5 7.5 9a5.5 5.5 0 1 0 9 0z" />
-    <path d="M9.5 14.5h5" />
-  </svg>
-);
-
-export const IconSun = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" {...ico} aria-hidden="true">
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-  </svg>
-);
-
-export const IconFlask = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" {...ico} aria-hidden="true">
-    <path d="M9 3h6M10 3v6l-5.2 9A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-3L14 9V3" />
-  </svg>
-);
