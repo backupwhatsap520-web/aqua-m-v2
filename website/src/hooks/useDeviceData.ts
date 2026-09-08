@@ -176,7 +176,19 @@ export function useDeviceData(): DeviceFeed {
   }, [mock]);
 
   const sendCommand = async (action: string, targetPot?: number) => {
-    if (mock) return `Mock mode: "${action}" was not sent anywhere.`;
+    if (mock) {
+      /*  Fixtures are the one place it is honest to move the robot without a
+       *  robot: mock mode is explicitly fake, and being able to press a pot
+       *  and watch it travel is the whole point of having fixtures. */
+      if (targetPot !== undefined) {
+        setData((prev) =>
+          prev
+            ? { ...prev, esp32_b: { status: { ...prev.esp32_b?.status, current_pot: targetPot, moving: false } } }
+            : prev,
+        );
+      }
+      return null;
+    }
     if (!isConfigured || !db) return 'Database is not configured.';
 
     //  Validate here as well as on the board. RECOMMENDATIONS items 15-17 note

@@ -20,7 +20,7 @@ import {
 } from '@phosphor-icons/react';
 import type { DeviceFeed } from '../hooks/useDeviceData';
 import { missionStateLabel } from '../types';
-import { RailViewLazy } from './RailViewLazy';
+import { RailScene } from './RailScene';
 import { Field, Panel, Readout, SkeletonRow, Tag } from './primitives';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
@@ -37,6 +37,9 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
   const { data, connection, history, sendCommand } = feed;
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  //  The pot the operator has asked for. Held until the robot actually reports
+  //  arriving there, so the scene never claims a position it has not reached.
+  const [requested, setRequested] = useState<number | null>(null);
 
   const a = data?.esp32_a;
   const b = data?.esp32_b?.status;
@@ -140,21 +143,30 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
   const run = async (label: string, action: string, pot?: number) => {
     setBusy(label);
     setNotice(null);
+    if (pot !== undefined) setRequested(pot);
     const err = await sendCommand(action, pot);
     setBusy(null);
     setNotice(err ?? `Sent: ${label}`);
+    if (err) setRequested(null);
   };
+
+  /*  Clear the request once the robot reports it got there. Derived during
+   *  render rather than kept in a second piece of state, so the marker cannot
+   *  drift out of step with the position the board reports. */
+  const pendingPot = requested !== null && b?.current_pot !== requested ? requested : null;
 
   return (
     <div className="space-y-phi-4">
       {/* --- the rail, and the readings taken from it -------------------- */}
-      <section className="surface overflow-hidden">
-        <RailViewLazy
+      <section className="surface overflow-hidden p-phi-3 sm:p-phi-4">
+        <RailScene
           currentPot={b?.current_pot ?? null}
+          requestedPot={pendingPot}
           planted={planted}
           pumping={Boolean(status?.pump_active)}
-          moving={Boolean(b?.moving)}
-          degraded={offline || b?.current_pot === undefined}
+          degraded={offline}
+          disabled={offline || busy !== null}
+          onSelect={(p) => run(`pot ${p}`, 'goto', p)}
         />
 
         <div className="flex flex-wrap divide-x divide-line border-t border-line px-4 sm:px-5">

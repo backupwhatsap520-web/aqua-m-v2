@@ -1,12 +1,4 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "categories": { "correctness": "warn" },
-  "overrides": [
-    {
-      "files": ["src/components/RailView.tsx"],
-      "rules": {
-        "react/immutability": "off"
-      }
-    }
-  ]
+  "categories": { "correctness": "warn" }
 }
