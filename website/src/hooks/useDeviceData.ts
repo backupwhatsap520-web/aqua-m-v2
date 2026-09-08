@@ -161,6 +161,48 @@ export function useDeviceData(): DeviceFeed {
     return () => unsub();
   }, [mock]);
 
+  /*  Fixtures need a moving history or the chart can never fill, which makes
+   *  the one panel that shows trend impossible to demonstrate without
+   *  hardware. A slow random walk around the fixture's own readings, at the
+   *  same 5 s cadence the board uploads at. Mock mode is explicitly fake, so
+   *  inventing a plausible trend here is honest; doing it on live data would
+   *  not be. */
+  useEffect(() => {
+    if (!mock) return;
+    const base = MOCKS[mock]?.esp32_a?.sensors;
+    if (!base) return;
+
+    const drift = (v: number | undefined, span: number, lo: number, hi: number) =>
+      v === undefined ? undefined : Math.min(hi, Math.max(lo, v + (Math.random() - 0.5) * span));
+
+    let soil = base.soil_moisture;
+    let temp = base.temperature;
+    let hum = base.humidity;
+
+    //  Seed a few minutes of past readings so the chart has a shape at once.
+    const now = Date.now();
+    const seeded: Sample[] = [];
+    for (let i = 24; i > 0; i--) {
+      soil = drift(soil, 2.2, 5, 95);
+      temp = drift(temp, 0.5, 10, 45);
+      hum = drift(hum, 1.6, 20, 95);
+      seeded.push({ t: now - i * 5000, soil, temperature: temp, humidity: hum });
+    }
+    setHistory(seeded);
+
+    const id = window.setInterval(() => {
+      soil = drift(soil, 2.2, 5, 95);
+      temp = drift(temp, 0.5, 10, 45);
+      hum = drift(hum, 1.6, 20, 95);
+      setHistory((prev) => {
+        const next = [...prev, { t: Date.now(), soil, temperature: temp, humidity: hum }];
+        return next.length > MAX_SAMPLES ? next.slice(-MAX_SAMPLES) : next;
+      });
+    }, 5000);
+
+    return () => window.clearInterval(id);
+  }, [mock]);
+
   //  Mark the feed stale rather than leaving a frozen number looking live.
   useEffect(() => {
     if (mock || !isConfigured) return;   // a fixture never goes stale
