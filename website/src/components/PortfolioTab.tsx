@@ -208,12 +208,12 @@ export function PortfolioTab(_props: { feed: DeviceFeed }) {
                 <p className="text-sm text-ink-muted">
                   Team photograph goes here.
                   <br />
-                  Save it as <code className="num text-[12px]">website/public/team.png</code>.
+                  Save it as <code className="num text-[12px]">website/public/team.jpg</code>.
                 </p>
               </div>
             ) : (
               <img
-                src="/team.png"
+                src="/team.jpg"
                 alt="The six students who built Aqua-M, standing together in school uniform."
                 className="h-auto w-full object-cover"
                 loading="lazy"
