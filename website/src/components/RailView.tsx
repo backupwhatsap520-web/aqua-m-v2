@@ -37,19 +37,19 @@ function Rail() {
     <group>
       <mesh position={[0, -0.62, 0]}>
         <boxGeometry args={[RAIL_SPAN, 0.075, 0.3]} />
-        <meshStandardMaterial color="#3D3059" roughness={0.7} metalness={0.35} />
+        <meshStandardMaterial color="#B9C3B7" roughness={0.7} metalness={0.35} />
       </mesh>
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * (RAIL_HALF + OVERHANG * 0.72), -0.5, 0]}>
           <boxGeometry args={[0.1, 0.28, 0.36]} />
-          <meshStandardMaterial color="#65538C" roughness={0.55} metalness={0.4} />
+          <meshStandardMaterial color="#93A192" roughness={0.55} metalness={0.4} />
         </mesh>
       ))}
       {/*  Checkpoint lines: what the infrared pair actually counts. */}
       {Array.from({ length: POT_COUNT }, (_, i) => (
         <mesh key={i} position={[potX(i + 1), -0.581, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.06, 0.3]} />
-          <meshBasicMaterial color="#191426" />
+          <meshBasicMaterial color="#6E7C6D" />
         </mesh>
       ))}
     </group>
@@ -62,14 +62,14 @@ function Pot({ pot, active }: { pot: number; active: boolean }) {
       <mesh>
         <cylinderGeometry args={[0.27, 0.21, 0.33, 20]} />
         <meshStandardMaterial
-          color={active ? '#4E3E70' : '#302647'}
+          color={active ? '#C9B49B' : '#DBD2C4'}
           roughness={0.9}
           metalness={0.05}
         />
       </mesh>
       <mesh position={[0, 0.17, 0]}>
         <cylinderGeometry args={[0.245, 0.245, 0.02, 20]} />
-        <meshStandardMaterial color="#1C1729" roughness={1} />
+        <meshStandardMaterial color="#7A6650" roughness={1} />
       </mesh>
       {/*  Foliage reads green against the violet everywhere else, which is the
           whole point of the split-complementary palette. */}
@@ -80,7 +80,7 @@ function Pot({ pot, active }: { pot: number; active: boolean }) {
           rotation={[0.34 * Math.cos(a), a, 0.34 * Math.sin(a)]}
         >
           <coneGeometry args={[0.08, 0.28, 5]} />
-          <meshStandardMaterial color={active ? '#3FA37B' : '#2E7159'} roughness={0.85} />
+          <meshStandardMaterial color={active ? '#A9D96A' : '#8CC63F'} roughness={0.85} />
         </mesh>
       ))}
     </group>
@@ -160,12 +160,12 @@ function Scene({
   const pots = useMemo(() => Array.from({ length: POT_COUNT }, (_, i) => i + 1), []);
   return (
     <group position={[0, 0.46, 0]}>
-      <ambientLight intensity={0.85} />
-      <directionalLight position={[3, 5, 4]} intensity={1.6} color="#EDE7FA" />
+      <ambientLight intensity={1.5} />
+      <directionalLight position={[3, 5, 4]} intensity={1.15} color="#FFFDF6" />
       {/*  Bounce from the accent side, so the machine picks up a little of the
           green it carries rather than being lit only by white. */}
       <directionalLight position={[-4, 2, -3]} intensity={0.5} color={ACCENT} />
-      <pointLight position={[0, 1.4, 2.4]} intensity={4} distance={12} color="#D7CCF0" />
+      <pointLight position={[0, 1.4, 2.4]} intensity={2.2} distance={12} color="#FFFFFF" />
 
       <Rail />
       {pots.map((p) => (

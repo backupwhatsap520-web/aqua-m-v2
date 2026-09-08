@@ -157,7 +157,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
           degraded={offline || b?.current_pot === undefined}
         />
 
-        <div className="flex flex-wrap divide-x divide-ink-800 border-t border-ink-800 px-4 sm:px-5">
+        <div className="flex flex-wrap divide-x divide-line border-t border-line px-4 sm:px-5">
           <Readout
             label="Soil"
             value={sensors?.soil_moisture}
@@ -205,15 +205,15 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
         <Panel
           title="Last 10 minutes"
           action={
-            <span className="num text-xs text-ink-400">
+            <span className="num text-xs text-ink-muted">
               {history.length > 0 ? `${history.length} samples` : 'no samples'}
             </span>
           }
         >
           <div className="h-56 sm:h-64">
             {history.length === 0 ? (
-              <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-ink-800">
-                <p className="max-w-xs text-center text-xs leading-relaxed text-ink-400">
+              <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-line">
+                <p className="max-w-xs text-center text-xs leading-relaxed text-ink-muted">
                   {offline
                     ? 'History starts once the dashboard can reach the database.'
                     : 'Waiting for the first reading from ESP32 A.'}
@@ -223,7 +223,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
               <Line options={chartOptions} data={chartData} />
             )}
           </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-ink-400">
+          <p className="mt-3 text-[11px] leading-relaxed text-ink-muted">
             Collected by this browser tab. The board keeps no history, so reloading starts it
             again.
           </p>
@@ -232,7 +232,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
         {/* --- state ------------------------------------------------------- */}
         <div className="space-y-phi-4">
           <Panel title="State">
-            <dl className="divide-y divide-ink-800">
+            <dl className="divide-y divide-line">
               <Field label="Mission">
                 {ms === undefined ? <SkeletonRow w="w-24" /> : missionStateLabel(ms)}
               </Field>
@@ -266,7 +266,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
                 <SkeletonRow w="w-1/2" />
               </div>
             ) : (
-              <dl className="divide-y divide-ink-800">
+              <dl className="divide-y divide-line">
                 <Field label="Condition">{weather.condition || '--'}</Field>
                 <Field label="Outside">
                   {weather.temp_out !== undefined ? `${weather.temp_out.toFixed(1)} C` : '--'}
@@ -297,7 +297,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
                   className={`num min-h-[44px] cursor-pointer rounded-lg border text-sm transition-all duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 ${
                     here
                       ? 'border-accent/50 bg-accent-wash text-accent'
-                      : 'border-ink-700 bg-ink-850 text-ink-300 hover:border-ink-600 hover:text-ink-100'
+                      : 'border-line-strong bg-paper-3 text-ink-soft hover:border-ink-muted hover:text-ink'
                   }`}
                 >
                   {p}
@@ -311,7 +311,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
               type="button"
               disabled={offline || busy !== null}
               onClick={() => run('return home', 'return')}
-              className="min-h-[44px] cursor-pointer rounded-lg border border-ink-700 bg-ink-850 px-3 text-sm text-ink-300 transition-all duration-200 hover:border-ink-600 hover:text-ink-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              className="min-h-[44px] cursor-pointer rounded-lg border border-line-strong bg-paper-3 px-3 text-sm text-ink-soft transition-all duration-200 hover:border-ink-muted hover:text-ink active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Return home
             </button>
@@ -325,11 +325,11 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
             </button>
           </div>
 
-          <p aria-live="polite" className="mt-3 min-h-[1.1rem] text-[11px] text-ink-400">
+          <p aria-live="polite" className="mt-3 min-h-[1.1rem] text-[11px] text-ink-muted">
             {busy ? `Sending ${busy}...` : notice}
           </p>
 
-          <p className="mt-1 text-[11px] leading-relaxed text-ink-400">
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-muted">
             {offline
               ? 'Disabled: the database cannot be reached.'
               : 'ESP32 A polls every 3 seconds and only while idle, so expect a short delay.'}
@@ -360,11 +360,11 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
                 )}
                 {decision.fertilizer_deferred && <Tag tone="warn">Fertiliser deferred</Tag>}
               </div>
-              <p className="text-sm leading-relaxed text-ink-300">
+              <p className="text-sm leading-relaxed text-ink-soft">
                 {decision.reason || 'No reason recorded.'}
               </p>
               {decision.timestamp && (
-                <p className="num text-[11px] text-ink-400">{decision.timestamp}</p>
+                <p className="num text-[11px] text-ink-muted">{decision.timestamp}</p>
               )}
             </div>
           )}

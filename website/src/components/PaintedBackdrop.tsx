@@ -28,14 +28,14 @@ import { useEffect, useState } from 'react';
  */
 
 const LEAVES = [
-  { x: 128, y: 178, s: 1.5, r: -28, f: '%23357A61', o: 0.62 },
-  { x: 1296, y: 626, s: 1.85, r: 33, f: '%232B6C55', o: 0.52 },
-  { x: 986, y: 132, s: 1.05, r: 11, f: '%233C8367', o: 0.44 },
-  { x: 452, y: 742, s: 1.32, r: -54, f: '%2328624E', o: 0.58 },
-  { x: 712, y: 268, s: 0.82, r: 67, f: '%2343906F', o: 0.3 },
-  { x: 46, y: 452, s: 0.95, r: 6, f: '%232F7159', o: 0.38 },
-  { x: 1130, y: 806, s: 1.15, r: -14, f: '%2331775E', o: 0.4 },
-  { x: 830, y: 700, s: 0.7, r: 44, f: '%233C8367', o: 0.26 },
+  { x: 128, y: 178, s: 1.5, r: -28, f: '%238CC63F', o: 0.62 },
+  { x: 1296, y: 626, s: 1.85, r: 33, f: '%237CB93A', o: 0.52 },
+  { x: 986, y: 132, s: 1.05, r: 11, f: '%239ED155', o: 0.44 },
+  { x: 452, y: 742, s: 1.32, r: -54, f: '%236FAE33', o: 0.58 },
+  { x: 712, y: 268, s: 0.82, r: 67, f: '%23A9D96A', o: 0.3 },
+  { x: 46, y: 452, s: 0.95, r: 6, f: '%2382BF3C', o: 0.38 },
+  { x: 1130, y: 806, s: 1.15, r: -14, f: '%2374B336', o: 0.4 },
+  { x: 830, y: 700, s: 0.7, r: 44, f: '%239ED155', o: 0.26 },
 ];
 
 const WATER = [
@@ -51,7 +51,7 @@ const WATER = [
 const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' preserveAspectRatio='xMidYMid slice'>
 <defs>
 <linearGradient id='w' x1='0.1' y1='0' x2='0.9' y2='1'>
-<stop offset='0%' stop-color='%23342A4F'/><stop offset='42%' stop-color='%23271F3B'/><stop offset='100%' stop-color='%231D1730'/>
+<stop offset='0%' stop-color='%23FBFAF5'/><stop offset='42%' stop-color='%23F5F3EB'/><stop offset='100%' stop-color='%23EFEDE2'/>
 </linearGradient>
 <filter id='k' x='-15%' y='-15%' width='130%' height='130%'>
 <feTurbulence type='fractalNoise' baseFrequency='0.022' numOctaves='3' seed='9'/>
@@ -73,16 +73,16 @@ const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' pres
 </defs>
 <rect width='1440' height='900' fill='url(%23w)'/>
 <g filter='url(%23k)'>
-<path d='M-80 90 C 240 20, 520 170, 780 96 C 1000 34, 1200 130, 1520 46 L1520 -60 L-80 -60 Z' fill='%23433566' opacity='0.85'/>
-<path d='M-80 800 C 260 742, 430 880, 720 830 C 1010 782, 1240 886, 1520 820 L1520 980 L-80 980 Z' fill='%23191327' opacity='0.9'/>
-<ellipse cx='1210' cy='250' rx='330' ry='200' fill='%234E3C7A' opacity='0.35'/>
-<ellipse cx='190' cy='640' rx='280' ry='185' fill='%23332853' opacity='0.45'/>
-<ellipse cx='640' cy='430' rx='420' ry='150' fill='%232C2247' opacity='0.3'/><ellipse cx='1090' cy='120' rx='210' ry='120' fill='%23C98A2E' opacity='0.14'/><ellipse cx='330' cy='858' rx='260' ry='90' fill='%23B4762A' opacity='0.1'/>
+<path d='M-80 90 C 240 20, 520 170, 780 96 C 1000 34, 1200 130, 1520 46 L1520 -60 L-80 -60 Z' fill='%23DFF0F5' opacity='0.85'/>
+<path d='M-80 800 C 260 742, 430 880, 720 830 C 1010 782, 1240 886, 1520 820 L1520 980 L-80 980 Z' fill='%23E4EDDD' opacity='0.9'/>
+<ellipse cx='1210' cy='250' rx='330' ry='200' fill='%23CDE9F1' opacity='0.35'/>
+<ellipse cx='190' cy='640' rx='280' ry='185' fill='%23E8F2DC' opacity='0.45'/>
+<ellipse cx='640' cy='430' rx='420' ry='150' fill='%23F1EFE6' opacity='0.3'/><ellipse cx='1090' cy='120' rx='210' ry='120' fill='%2317B9D6' opacity='0.14'/><ellipse cx='330' cy='858' rx='260' ry='90' fill='%238CC63F' opacity='0.1'/>
 </g>
 <g filter='url(%23kf)'>
 ${WATER.map(
   (s) =>
-    `<rect x='${s.x}' y='${s.y}' width='${s.w}' height='11' rx='5' fill='%234FBE97' opacity='${s.o}'/>`,
+    `<rect x='${s.x}' y='${s.y}' width='${s.w}' height='11' rx='5' fill='%2317B9D6' opacity='${s.o}'/>`,
 ).join('')}
 </g>
 <g filter='url(%23kf)'>
@@ -90,7 +90,7 @@ ${LEAVES.map(
   (l) =>
     `<g transform='translate(${l.x} ${l.y}) rotate(${l.r}) scale(${l.s})' opacity='${l.o}'>` +
     `<path d='M0 0 C 32 -48, 94 -54, 126 -8 C 96 42, 30 46, 0 0 Z' fill='${l.f}'/>` +
-    `<path d='M2 -2 C 42 -16, 88 -14, 126 -8' stroke='%23191327' stroke-width='2.5' fill='none' opacity='0.45'/>` +
+    `<path d='M2 -2 C 42 -16, 88 -14, 126 -8' stroke='%23E4EDDD' stroke-width='2.5' fill='none' opacity='0.45'/>` +
     `</g>`,
 ).join('')}
 </g>
@@ -110,7 +110,7 @@ const source = `data:image/svg+xml,${svg.replace(/#/g, '%23')}`;
  *  canvas once and handing back a PNG means there is no filter left in the
  *  document at all, and the 3D view gets its frames.
  *
- *  Until the bake finishes the page shows bg-canvas, which is the same family
+ *  Until the bake finishes the page shows bg-paper, which is the same family
  *  of green, so there is no flash of a different colour.
  */
 function usePaintedRaster(width = 1440, height = 900) {
@@ -150,7 +150,7 @@ export function PaintedBackdrop() {
   const raster = usePaintedRaster();
 
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 bg-canvas">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 bg-paper">
       {raster && (
         <div
           className="absolute inset-0"
@@ -163,7 +163,7 @@ export function PaintedBackdrop() {
       )}
       {/*  A short settle at the top so the header and the connection line always
           sit on calm ground, whatever the painting is doing up there. */}
-      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-canvas/75 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-paper/75 to-transparent" />
     </div>
   );
 }

@@ -97,12 +97,12 @@ export function Robot({
         <group key={s} position={[0, -0.42, s * 0.17]}>
           <mesh>
             <boxGeometry args={[BODY_W * PHI, BODY_H * 0.62, 0.1]} />
-            <meshStandardMaterial color="#2E2545" roughness={0.85} metalness={0.2} />
+            <meshStandardMaterial color="#4F6459" roughness={0.85} metalness={0.2} />
           </mesh>
           {[-0.28, 0, 0.28].map((x) => (
             <mesh key={x} position={[x, -0.02, 0.052]} rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.052, 0.052, 0.012, 12]} />
-              <meshStandardMaterial color="#4E3E70" roughness={0.6} metalness={0.4} />
+              <meshStandardMaterial color="#93A192" roughness={0.6} metalness={0.4} />
             </mesh>
           ))}
         </group>
@@ -111,7 +111,7 @@ export function Robot({
       {/* --- body -------------------------------------------------------- */}
       <mesh position={[0, -0.24, 0]}>
         <boxGeometry args={[BODY_W, BODY_H, 0.34]} />
-        <meshStandardMaterial color="#3B2F59" roughness={0.55} metalness={0.35} />
+        <meshStandardMaterial color="#EDEAE1" roughness={0.55} metalness={0.35} />
       </mesh>
       {/*  The one coloured surface on the machine. */}
       <mesh position={[0, -0.24, 0.171]}>
@@ -122,21 +122,21 @@ export function Robot({
       {/* --- neck and head ---------------------------------------------- */}
       <mesh position={[0, -0.09, 0]}>
         <cylinderGeometry args={[0.032, 0.038, 0.17, 10]} />
-        <meshStandardMaterial color="#4E3E70" roughness={0.5} metalness={0.45} />
+        <meshStandardMaterial color="#93A192" roughness={0.5} metalness={0.45} />
       </mesh>
 
       <group ref={head} position={[0, 0.02, 0]}>
         {/* binocular housing */}
         <mesh>
           <boxGeometry args={[HEAD_W, HEAD_W * 0.56, 0.14]} />
-          <meshStandardMaterial color="#453869" roughness={0.5} metalness={0.4} />
+          <meshStandardMaterial color="#DFDBD0" roughness={0.5} metalness={0.4} />
         </mesh>
         {/* the two eyes, and their lids */}
         {[-1, 1].map((s, i) => (
           <group key={s} position={[s * HEAD_W * 0.26, 0.005, 0.075]}>
             <mesh rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.058, 0.058, 0.03, 20]} />
-              <meshStandardMaterial color="#20193A" roughness={0.35} metalness={0.5} />
+              <meshStandardMaterial color="#3B4E45" roughness={0.35} metalness={0.5} />
             </mesh>
             <mesh position={[0, 0, 0.017]}>
               <circleGeometry args={[0.042, 20]} />
@@ -150,7 +150,7 @@ export function Robot({
             {/* lid: scaled down over the eye to blink and to squint */}
             <mesh ref={i === 0 ? lidL : lidR} position={[0, 0, 0.02]}>
               <planeGeometry args={[0.1, 0.1]} />
-              <meshBasicMaterial color="#453869" />
+              <meshBasicMaterial color="#DFDBD0" />
             </mesh>
           </group>
         ))}
@@ -160,7 +160,7 @@ export function Robot({
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * (BODY_W / 2 + 0.03), -0.26, 0]}>
           <boxGeometry args={[0.04, 0.13, 0.05]} />
-          <meshStandardMaterial color="#4E3E70" roughness={0.55} metalness={0.4} />
+          <meshStandardMaterial color="#93A192" roughness={0.55} metalness={0.4} />
         </mesh>
       ))}
 
@@ -168,11 +168,11 @@ export function Robot({
       <group ref={arm}>
         <mesh position={[-0.2, -0.16, 0.14]} rotation={[0, 0, 0.42]}>
           <boxGeometry args={[0.3, 0.045, 0.05]} />
-          <meshStandardMaterial color="#4E3E70" roughness={0.5} metalness={0.45} />
+          <meshStandardMaterial color="#93A192" roughness={0.5} metalness={0.45} />
         </mesh>
         <mesh position={[-0.33, -0.3, 0.14]}>
           <cylinderGeometry args={[0.014, 0.014, 0.26, 8]} />
-          <meshStandardMaterial color="#AFA3C8" roughness={0.3} metalness={0.7} />
+          <meshStandardMaterial color="#9AA79B" roughness={0.3} metalness={0.7} />
         </mesh>
         <mesh position={[-0.33, -0.44, 0.14]}>
           <sphereGeometry args={[0.03, 12, 12]} />

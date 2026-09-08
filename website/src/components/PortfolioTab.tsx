@@ -2,7 +2,6 @@ import { motion } from 'motion/react';
 import { ArrowsLeftRight, CloudSlash, ShieldCheck } from '@phosphor-icons/react';
 import type { DeviceFeed } from '../hooks/useDeviceData';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { RailViewLazy } from './RailViewLazy';
 
 /*  The judge-facing side of the dashboard.
  *
@@ -22,64 +21,20 @@ const reveal = (delay = 0) => ({
   transition: { duration: 0.55, delay, ease: EASE },
 });
 
-/*  Entry animation for the hero.
- *
- *  Deliberately NOT whileInView. The hero is on screen at load, so gating it
- *  behind an intersection threshold means it either flashes or, if the element
- *  starts at zero height (the 3D canvas sizes itself after mount), never
- *  crosses the threshold at all and stays invisible. That is exactly what
- *  happened here the first time. */
-const enter = (delay = 0) => ({
-  initial: { opacity: 0, y: 18 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.55, delay, ease: EASE },
-});
+/*  Kept for reference: the hero that used to live here moved into the page
+ *  shell above the dashboard frame, and animates on entry there. */
 
-export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
+export function PortfolioTab(_props: { feed: DeviceFeed }) {
   const reduce = useReducedMotion();
-  const b = feed.data?.esp32_b?.status;
-  const status = feed.data?.esp32_a?.status;
-  const ms = status?.mission_state;
   const anim = (delay = 0) => (reduce ? {} : reveal(delay));
-  const intro = (delay = 0) => (reduce ? {} : enter(delay));
 
   return (
     <div className="space-y-phi-6 pb-phi-5 sm:space-y-phi-7">
-      {/* --- 1. hero: asymmetric split, the rail carries the visual weight -- */}
-      <section className="grid items-center gap-phi-5 lg:grid-cols-phi-r lg:gap-phi-6">
-        <motion.div {...intro()}>
-          <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
-            ISIF / IYSA
-          </p>
-          <h1 className="text-phi-xl font-semibold tracking-tightest text-ink-100 lg:text-phi-2xl">
-            Five pots.
-            <br />
-            One robot.
-            <br />
-            <span className="text-accent">No guessing.</span>
-          </h1>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-ink-300">
-            A rail-guided robot plants a probe in each pot, asks Gemini what the plant needs,
-            and waters it. Lose the network and a rule on the board takes over.
-          </p>
-        </motion.div>
-
-        <motion.div {...intro(0.12)} className="surface overflow-hidden">
-          <RailViewLazy
-            currentPot={b?.current_pot ?? 3}
-            planted={ms !== undefined && ms >= 4 && ms <= 9}
-            pumping={Boolean(status?.pump_active)}
-            moving={Boolean(b?.moving)}
-            degraded={false}
-          />
-        </motion.div>
-      </section>
-
-      {/* --- 2. how it decides: offset columns with a numbered spine ------- */}
+      {/* --- how it decides: offset columns with a numbered spine ------- */}
       <section className="grid gap-phi-5 lg:grid-cols-[1fr_1.618fr] lg:gap-phi-6">
         <motion.h2
           {...anim()}
-          className="text-phi-lg font-semibold tracking-tightest text-ink-100 sm:text-phi-xl"
+          className="text-phi-lg font-semibold tracking-tightest text-ink sm:text-phi-xl"
         >
           Two ways to decide, and a rule about which one wins
         </motion.h2>
@@ -109,9 +64,9 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
             >
               <div className="mb-2 flex items-center gap-2.5">
                 {item.icon}
-                <h3 className="text-base font-medium text-ink-100">{item.head}</h3>
+                <h3 className="text-base font-medium text-ink">{item.head}</h3>
               </div>
-              <p className="max-w-xl text-sm leading-relaxed text-ink-300">{item.body}</p>
+              <p className="max-w-xl text-sm leading-relaxed text-ink-soft">{item.body}</p>
             </motion.article>
           ))}
         </div>
@@ -121,22 +76,22 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
       <section>
         <motion.h2
           {...anim()}
-          className="mb-phi-5 text-phi-lg font-semibold tracking-tightest text-ink-100 sm:text-phi-xl"
+          className="mb-phi-5 text-phi-lg font-semibold tracking-tightest text-ink sm:text-phi-xl"
         >
           One visit to one pot
         </motion.h2>
 
-        <div className="grid gap-px overflow-hidden rounded-xl border border-ink-800 bg-ink-800 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
           {[
             { t: 'Drive', d: 'ESP32 A sends TARGET:3. The motion board counts checkpoint lines under the rail until it reaches the third.' },
             { t: 'Plant', d: 'The arm lowers the probe into the soil and reports SENSOR_READY. Two seconds to settle before anything is read.' },
             { t: 'Read and decide', d: 'Soil, pH, air and light are sampled, then either Gemini or the local rule sets a duration.' },
             { t: 'Water and lift', d: 'The pump runs for exactly that long, the arm lifts, and the robot is free to move again.' },
           ].map((step, i) => (
-            <motion.div key={step.t} {...anim(0.06 * i)} className="bg-ink-900 p-5">
+            <motion.div key={step.t} {...anim(0.06 * i)} className="bg-paper-2 p-5">
               <span className="num mb-3 block text-xs text-accent">{`0${i + 1}`}</span>
-              <h3 className="mb-2 text-sm font-medium text-ink-100">{step.t}</h3>
-              <p className="text-[13px] leading-relaxed text-ink-400">{step.d}</p>
+              <h3 className="mb-2 text-sm font-medium text-ink">{step.t}</h3>
+              <p className="text-[13px] leading-relaxed text-ink-muted">{step.d}</p>
             </motion.div>
           ))}
         </div>
@@ -147,7 +102,7 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
         <div>
           <motion.h2
             {...anim()}
-            className="mb-phi-4 text-phi-lg font-semibold tracking-tightest text-ink-100 sm:text-phi-xl"
+            className="mb-phi-4 text-phi-lg font-semibold tracking-tightest text-ink sm:text-phi-xl"
           >
             What has actually been checked
           </motion.h2>
@@ -160,15 +115,15 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
               { n: '0', l: 'hardware measurements', s: 'the boards had not arrived' },
             ].map((f) => (
               <div key={f.l}>
-                <dt className="num text-phi-lg font-medium text-ink-100 sm:text-phi-xl">{f.n}</dt>
-                <dd className="mt-1.5 text-sm text-ink-300">{f.l}</dd>
-                <dd className="mt-0.5 text-xs leading-relaxed text-ink-400">{f.s}</dd>
+                <dt className="num text-phi-lg font-medium text-ink sm:text-phi-xl">{f.n}</dt>
+                <dd className="mt-1.5 text-sm text-ink-soft">{f.l}</dd>
+                <dd className="mt-0.5 text-xs leading-relaxed text-ink-muted">{f.s}</dd>
               </div>
             ))}
           </motion.dl>
         </div>
 
-        <motion.div {...anim(0.12)} className="space-y-4 text-sm leading-relaxed text-ink-300">
+        <motion.div {...anim(0.12)} className="space-y-4 text-sm leading-relaxed text-ink-soft">
           <p>
             Every figure on this page comes from simulation, not from a robot. The firmware
             was compiled and driven on a PC with a virtual clock, which is how a two-minute
@@ -179,7 +134,7 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
             does at twenty percent battery, whether the infrared sensors survive stage
             lighting, or how the servo behaves when the motors draw current.
           </p>
-          <p className="border-l-2 border-warn/40 pl-4 text-ink-400">
+          <p className="border-l-2 border-warn/40 pl-4 text-ink-muted">
             One finding is worth knowing before a demo. Under simulated infrared dropout the
             checkpoint counter misses a third of crossings at five percent sample loss. Since
             position is counted rather than measured, one missed line leaves the robot at the

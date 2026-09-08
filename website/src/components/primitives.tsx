@@ -39,7 +39,7 @@ export function Readout({
 
   return (
     <div className="flex-1 px-4 py-3 first:pl-0 sm:px-5 lg:px-6">
-      <div className="mb-2 flex items-center gap-1.5 text-ink-400">
+      <div className="mb-2 flex items-center gap-1.5 text-ink-muted">
         {icon}
         <span className="text-[11px] font-medium tracking-wide">{label}</span>
       </div>
@@ -52,9 +52,9 @@ export function Readout({
       ) : loading ? (
         <div className="skeleton h-8 w-20" aria-hidden="true" />
       ) : (
-        <p className="num text-2xl font-medium text-ink-100 sm:text-3xl">
+        <p className="num text-2xl font-medium text-ink sm:text-3xl">
           {animated.toFixed(decimals)}
-          {unit && <span className="ml-1 text-sm font-normal text-ink-400">{unit}</span>}
+          {unit && <span className="ml-1 text-sm font-normal text-ink-muted">{unit}</span>}
         </p>
       )}
 
@@ -79,7 +79,7 @@ export function Panel({
     <section className={`surface p-4 sm:p-5 ${className}`}>
       {(title || action) && (
         <header className="mb-4 flex items-baseline justify-between gap-3">
-          {title && <h2 className="text-sm font-semibold text-ink-100">{title}</h2>}
+          {title && <h2 className="text-sm font-semibold text-ink">{title}</h2>}
           {action}
         </header>
       )}
@@ -92,8 +92,8 @@ export function Panel({
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-2">
-      <dt className="text-sm text-ink-400">{label}</dt>
-      <dd className="num text-right text-sm text-ink-100">{children}</dd>
+      <dt className="text-sm text-ink-muted">{label}</dt>
+      <dd className="num text-right text-sm text-ink">{children}</dd>
     </div>
   );
 }
@@ -109,7 +109,7 @@ export function Tag({
     accent: 'border-accent/35 bg-accent-wash text-accent',
     warn: 'border-warn/35 bg-warn/10 text-warn',
     fault: 'border-fault/35 bg-fault/10 text-fault',
-    neutral: 'border-ink-700 bg-ink-850 text-ink-300',
+    neutral: 'border-line-strong bg-paper-3 text-ink-soft',
   } as const;
 
   return (
