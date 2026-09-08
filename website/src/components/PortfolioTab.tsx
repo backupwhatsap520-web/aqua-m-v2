@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   ArrowsLeftRight,
+  Broadcast as BroadcastIcon,
   CloudSlash,
+  Magnet as MagnetIcon,
   Medal,
   ShieldCheck,
+  Thermometer as ThermometerIcon,
   Users,
+  UsersThree as UsersThreeIcon,
 } from '@phosphor-icons/react';
 import type { DeviceFeed } from '../hooks/useDeviceData';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -14,8 +18,8 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
  *
  *  Six sections, six different layout families: an offset two-column with a
  *  spine, a horizontal step sequence, a before-and-after split, an award
- *  block, a team plate, and a figures-and-prose closer. Repeating one layout
- *  is what makes a page read as generated, so none of them repeats.
+ *  block, a team plate, and a two-by-two roadmap. Repeating one layout is
+ *  what makes a page read as generated, so none of them repeats.
  */
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -204,12 +208,12 @@ export function PortfolioTab(_props: { feed: DeviceFeed }) {
                 <p className="text-sm text-ink-muted">
                   Team photograph goes here.
                   <br />
-                  Save it as <code className="num text-[12px]">website/public/team.jpg</code>.
+                  Save it as <code className="num text-[12px]">website/public/team.png</code>.
                 </p>
               </div>
             ) : (
               <img
-                src="/team.jpg"
+                src="/team.png"
                 alt="The six students who built Aqua-M, standing together in school uniform."
                 className="h-auto w-full object-cover"
                 loading="lazy"
@@ -242,62 +246,58 @@ export function PortfolioTab(_props: { feed: DeviceFeed }) {
         </motion.div>
       </section>
 
-      {/* --- 6. what is proven, in figures and plain sentences ----------- */}
-      <section className="grid gap-phi-5 lg:grid-cols-phi lg:gap-phi-6">
-        <div>
-          <motion.h2
-            {...anim()}
-            className="mb-phi-4 text-phi-lg font-semibold tracking-tightest text-ink sm:text-phi-xl"
-          >
-            What has actually been checked
-          </motion.h2>
-
-          <motion.dl {...anim(0.08)} className="grid grid-cols-2 gap-phi-5">
-            {[
-              {
-                n: '13',
-                l: 'build combinations, all passing',
-                s: 'two ESP32 core generations, two ArduinoJson versions',
-              },
-              {
-                n: '172',
-                l: 'software-in-the-loop checks',
-                s: 'every safety invariant among them',
-              },
-              {
-                n: '44%',
-                l: 'of flash used on ESP32 A',
-                s: 'room left for the whole system again',
-              },
-              { n: '0', l: 'hardware measurements', s: 'the boards had not arrived' },
-            ].map((f) => (
-              <div key={f.l}>
-                <dt className="num text-phi-lg font-medium text-ink sm:text-phi-xl">{f.n}</dt>
-                <dd className="mt-phi-2 text-sm text-ink-soft">{f.l}</dd>
-                <dd className="mt-phi-1 text-xs leading-relaxed text-ink-muted">{f.s}</dd>
-              </div>
-            ))}
-          </motion.dl>
-        </div>
-
-        <motion.div {...anim(0.12)} className="space-y-phi-3 text-sm leading-relaxed text-ink-soft">
-          <p>
-            Every figure on this page comes from simulation, not from a robot. The firmware
-            was compiled and driven on a PC with a virtual clock, which is how a two-minute
-            pump cooldown can be tested in one line instead of two minutes.
-          </p>
-          <p>
-            That rules out whole classes of logic bug. It does not tell you what the pump does
-            at twenty percent battery, whether the infrared sensors survive stage lighting, or
-            how the servo behaves when the motors draw current.
-          </p>
-          <p className="border-l-2 border-warn/40 pl-phi-3 text-ink-muted">
-            One finding is worth knowing before a demo. Under simulated infrared dropout the
-            checkpoint counter misses a third of crossings at five percent sample loss. Since
-            position is counted rather than measured, one missed line leaves the robot at the
-            wrong pot for the rest of the run.
+      {/* --- 6. what comes next ----------------------------------------- */}
+      <section>
+        <motion.div {...anim()} className="mb-phi-5 max-w-2xl">
+          <h2 className="text-phi-lg font-semibold tracking-tightest text-ink sm:text-phi-xl">
+            What comes after V2
+          </h2>
+          <p className="mt-phi-3 text-sm leading-relaxed text-ink-soft">
+            None of this is built yet, and the hardware for V2 itself has not arrived. These
+            are the four directions the team is working towards, and each one exists because
+            of a limit V2 still has.
           </p>
         </motion.div>
+
+        <div className="grid gap-phi-4 md:grid-cols-2">
+          {[
+            {
+              icon: <BroadcastIcon size={22} className="text-cyan-deep" weight="duotone" />,
+              head: 'LoRa instead of Wi-Fi',
+              limit: 'Today the robot needs a Wi-Fi access point within range.',
+              body: 'LoRa carries a few hundred bytes over kilometres on very little power. A greenhouse or a field is exactly the case Wi-Fi is worst at, and the messages this robot sends are small enough to fit.',
+            },
+            {
+              icon: <ThermometerIcon size={22} className="text-cyan-deep" weight="duotone" />,
+              head: 'More to measure',
+              limit: 'Soil moisture, pH, air and light only tell part of the story.',
+              body: 'Nitrogen, phosphorus and potassium would let the fertiliser decision rest on something real rather than on a schedule. A flow sensor would turn seconds of pump time into millilitres of water, which is a much stronger claim than the one the paper can make now.',
+            },
+            {
+              icon: <UsersThreeIcon size={22} className="text-cyan-deep" weight="duotone" />,
+              head: 'Several small robots instead of one big one',
+              limit: 'One robot on one rail is a single point of failure.',
+              body: 'Smaller units, light enough to carry in one hand, could cover a row each and be moved wherever the plants are. If one stops, the others keep going, and a demo no longer depends on a single machine surviving the journey.',
+            },
+            {
+              icon: <MagnetIcon size={22} className="text-cyan-deep" weight="duotone" />,
+              head: 'Magnetic plug-and-play parts',
+              limit: 'Changing a sensor now means a screwdriver and a rewire.',
+              body: 'Magnetic mounts with pogo-pin contacts would let the probe, the arm or a whole sensor head come off and go back on in seconds. Repair mid-competition stops being a risk, and one chassis can be reconfigured for a different crop.',
+            },
+          ].map((item, i) => (
+            <motion.article key={item.head} {...anim(0.07 * i)} className="surface p-phi-4 sm:p-phi-5">
+              <div className="mb-phi-3 flex items-center gap-phi-3">
+                {item.icon}
+                <h3 className="text-base font-medium text-ink">{item.head}</h3>
+              </div>
+              <p className="mb-phi-3 border-l-2 border-line-strong pl-phi-3 text-[13px] leading-relaxed text-ink-muted">
+                {item.limit}
+              </p>
+              <p className="text-sm leading-relaxed text-ink-soft">{item.body}</p>
+            </motion.article>
+          ))}
+        </div>
       </section>
     </div>
   );

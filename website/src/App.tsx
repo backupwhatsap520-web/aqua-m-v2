@@ -110,8 +110,8 @@ export default function App() {
         </div>
 
         <footer className="mt-phi-7 border-t border-line pt-phi-4 text-phi-sm leading-relaxed text-ink-muted">
-          Readings come from ESP32 A via Firebase. Figures quoted below the dashboard are
-          software-in-the-loop simulation, not hardware measurement.
+          Readings come from ESP32 A via Firebase. The hardware has not arrived yet, so
+          nothing on this page has been measured on a robot.
         </footer>
       </div>
     </>
