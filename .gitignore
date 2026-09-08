@@ -26,3 +26,6 @@ desktop.ini
 
 # Berisi API key 21st.dev - jangan pernah ikut repo
 .mcp.json
+
+# Skill pihak ketiga via npx skills - lokal saja
+.agents/
