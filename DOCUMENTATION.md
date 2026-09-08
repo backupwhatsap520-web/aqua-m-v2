@@ -377,6 +377,51 @@ Tighten these before any public demo — see `RECOMMENDATIONS.md`, item 5.
 (Mobizt), ArduinoJson 6 or 7, DHT sensor library (Adafruit), BH1750
 (Christopher Laws), LiquidCrystal_I2C (Frank de Brabander).
 
+### Verified toolchain
+
+Both sketches were compiled against every combination below on 2026-09-08.
+All eleven passed. Pin these versions if a future build misbehaves — "some
+version of the ESP32 core" is what costs an evening on a deadline.
+
+| Component | Versions verified |
+|-----------|-------------------|
+| arduino-cli | 1.2.0 (the copy bundled in Arduino IDE 2 works; no separate install needed) |
+| `esp32:esp32` core | **2.0.17** and **3.3.11** — both build cleanly |
+| ArduinoJson | **6.21.5** and **7.4.3** — the `JSON_DOC` macro in A §3 bridges them correctly |
+| Firebase ESP32 Client (Mobizt) | **4.4.17** — the 4.x line, header `FirebaseESP32.h`. Not the newer *Firebase Arduino Client Library*, which uses a different API |
+| ESP32Servo | 3.2.1 |
+| DHT sensor library (Adafruit) | 1.4.7 |
+| Adafruit Unified Sensor | 1.1.15 |
+| BH1750 (Christopher Laws) | 1.3.0 |
+| LiquidCrystal I2C | 1.1.2 |
+
+Flash and RAM, `huge_app` partition (3 145 728 B flash, 327 680 B RAM):
+
+| Sketch | Core | Flash | RAM |
+|--------|------|-------|-----|
+| A | 2.0.17 | 1 256 161 B (40 %) | 50 596 B (15 %) |
+| A | 3.3.11 | 1 401 466 B (44 %) | 53 536 B (16 %) |
+| B | 2.0.17 | 286 625 B (9 %) | 22 204 B (6 %) |
+| B | 3.3.11 | 298 591 B (9 %) | 22 912 B (6 %) |
+
+Core 3.x costs ESP32 A about 145 kB more flash than 2.0.17. Both fit with wide
+headroom, so either core is a safe choice.
+
+Reproduce the whole matrix with `bash tools/build_matrix.sh`. The five
+bench-test switches are `#ifndef`-guarded, so the script can compile both
+branches of each without editing any source file:
+
+```bash
+arduino-cli compile --fqbn "esp32:esp32:esp32:PartitionScheme=huge_app" \
+  --build-property "compiler.cpp.extra_flags=-DTRACK_LINE_WIDE=0" \
+  firmware/AquaM_ESP32_B
+```
+
+**A note on the Windows setup used here.** If the Arduino sketchbook sits inside
+OneDrive, library installs fail while extracting (`creating temp dir ...: The
+system cannot find the file specified`). Point the sketchbook somewhere outside
+OneDrive, or set `ARDUINO_DIRECTORIES_USER`, and it works.
+
 Fill in the block marked *USER CONFIGURATION* at the top of
 `AquaM_ESP32_A.ino` first: Wi-Fi, Firebase URL and secret, Gemini key, and the
 wttr.in location.
@@ -403,3 +448,75 @@ npm install
 npm run dev               # http://localhost:5173
 npm run build             # dist/ — deploy to Firebase Hosting, Vercel or Netlify
 ```
+
+---
+
+## 11. BenchTest — how to read the output
+
+`tools/BenchTest/BenchTest.ino` is a wiring and calibration aid, separate from
+the robot firmware. Flash it to one board at a time and open the Serial Monitor
+at **115200 baud**. It streams raw ADC values every 200 ms and takes single-key
+commands. Press `h` for the menu.
+
+Pick the board at the top of the file:
+
+```c
+#define BENCH_BOARD_A 1     // 1 = ESP32 A, 0 = ESP32 B
+```
+
+### ESP32 A columns
+
+```
+ms      soil    pH      ldrL    ldrR    water   fert
+41200   3187    2204    1841    1902    off     off
+```
+
+- **soil** — raw ADC from the capacitive probe. Compare against the calibration
+  in §3: 3200 is the dry reference, 1075 the wet one. Hold the probe in air, then
+  in a glass of water. If air does not read near 3200 and water near 1075, the
+  numbers in §3 need replacing with what you actually measure.
+- **pH** — raw ADC. `PH_ADC_AT_4` (2200) and `PH_ADC_AT_9` (1500) are
+  placeholders, see RECOMMENDATIONS item 20. Read a pH 4 buffer and a pH 9
+  buffer, write down both numbers, and put them in §3.
+- **ldrL / ldrR** — solar tracker. Shade one side and confirm the two columns
+  move apart. If they move together, they are wired to the same node.
+- **water / fert** — relay state. `w` and `f` toggle them, `0` turns both off.
+  Listen for the click, and watch that neither turns on by itself at boot.
+
+### ESP32 B columns
+
+```
+ms      irLout  irLin   irRin   irRout  L_out  L_in  R_in  R_out
+41200   2612    1104    1180    2588    BLK    wht   wht   BLK
+```
+
+The last four columns apply `IR_THRESHOLD` (2000) to the raw values, so you can
+read the verdict directly. This is what resolves the two open switch questions
+in RECOMMENDATIONS section A:
+
+**`CHECKPOINT_USES_INNER_SENSORS`.** Push the robot along the track by hand and
+watch which pair flips to `BLK` *only* while crossing a perpendicular line. That
+pair is the checkpoint pair. If it is the outer pair, the default `0` is right.
+
+**`TRACK_LINE_WIDE`.** Park the robot centred on the track and read the two
+tracking sensors:
+
+| Both tracking sensors read | Meaning | Set |
+|----------------------------|---------|-----|
+| `BLK BLK` | the line covers both — wide line | `TRACK_LINE_WIDE 1` (default) |
+| `wht wht` | the line passes between them — straddled | `TRACK_LINE_WIDE 0` |
+
+Get this wrong in the wide direction and the robot reports `ERROR:LINE_LOST`
+within 2.5 s of a perfectly normal start.
+
+While you are here, note the actual black and white values. If they are not
+separated by a comfortable margin either side of 2000, adjust the sensor height
+before adjusting `IR_THRESHOLD` — height is the stronger lever.
+
+`1`–`4` sweep the four arm servos one at a time, `a` sweeps all four. The sweep
+is deliberately limited to 60–120° rather than full travel: this is a wiring
+check, and an arm with the probe fitted can hit the frame at an unexpected
+angle. **The motors are not driven by this sketch on purpose** — a bench test
+that can make the robot move is a bench test that drives itself off the table.
+
+`space` pauses the stream so you can read a value without it scrolling away.

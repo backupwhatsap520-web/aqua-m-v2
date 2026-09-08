@@ -1,9 +1,11 @@
-# Rahasia — jangan pernah ikut ter-commit
+# Secrets — never commit
 .env
 .env.*
 !.env.example
+*.local
 *.key
 secrets.h
+.mcp.json
 
 # Node / website
 node_modules/
@@ -11,21 +13,18 @@ dist/
 build/
 .vite/
 
-# Build Arduino
-build/
+# Arduino build output
 *.bin
 *.elf
 
-# Sistem
+# SIL harness output
+sil/out/
+
+# Third-party skills installed locally, not part of Aqua-M
+.claude/skills/
+.agents/
+
+# OS
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# Skill pihak ketiga (ui-ux-pro-max) - dipasang lokal, tidak ikut repo
-.claude/skills/
-
-# Berisi API key 21st.dev - jangan pernah ikut repo
-.mcp.json
-
-# Skill pihak ketiga via npx skills - lokal saja
-.agents/

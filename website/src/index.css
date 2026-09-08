@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+  }
+
+  /*  Visible focus, always, on the cyan so it reads against paper. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-cyan ring-offset-2 ring-offset-paper;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /*  Numbers are monospace and tabular everywhere, so a reading that changes
+   *  does not shift the layout under the reader's eye. */
+  .num {
+    @apply font-mono tabular-nums tracking-tightest;
+  }
+
+  .rule-l {
+    @apply border-l border-line;
+  }
+
+  /*  A panel is a sheet laid on the painting: slightly translucent so the
+   *  paint reads through at the edges, with a hairline rather than a heavy
+   *  shadow doing the separating. */
+  .surface {
+    @apply rounded-xl border border-line bg-paper-2/90 backdrop-blur-[2px];
+    box-shadow: 0 1px 2px rgba(24, 44, 36, 0.04), 0 12px 28px -20px rgba(24, 44, 36, 0.28);
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden rounded bg-paper-3;
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 animate-shimmer;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+    transform: translateX(-100%);
+  }
+}

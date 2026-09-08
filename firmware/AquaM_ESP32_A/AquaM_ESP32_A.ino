@@ -46,8 +46,12 @@
  *  1 = a separate 2-minute cooldown per pot, so a sweep of all five pots can
  *      water each of them once.
  *  Read RECOMMENDATIONS.md item 23 before changing this — it affects what
- *  the paper describes, so the team should agree first. */
+ *  the paper describes, so the team should agree first.
+ *  Guarded so the build matrix can override it with -DCOOLDOWN_PER_POT=1
+ *  without editing this file; the default below is unchanged. */
+#ifndef COOLDOWN_PER_POT
 #define COOLDOWN_PER_POT 0
+#endif
 
 /* ===========================================================================
  *  1. USER CONFIGURATION — edit these before flashing
