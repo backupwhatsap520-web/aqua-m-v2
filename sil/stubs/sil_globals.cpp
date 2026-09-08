@@ -18,6 +18,7 @@ namespace sil {
   std::map<uint8_t, uint8_t> pinMode_;
   std::map<uint8_t, int>     analogValue;
   std::map<uint8_t, uint8_t> digitalInput;
+  std::map<uint8_t, uint32_t> pwmDuty;
 
   bool             serialEcho = false;
   std::string      serialOut;

@@ -221,6 +221,25 @@ inline void analogSetPinAttenuation(uint8_t, int) {}
 #define ADC_11db 3
 #define ADC_ATTEN_DB_12 3
 
+/* --- LEDC (motor PWM) ---------------------------------------------------- */
+namespace sil {
+  extern std::map<uint8_t, uint32_t> pwmDuty;     // by pin on core 3.x
+  inline uint32_t dutyOf(uint8_t pin) {
+    auto it = pwmDuty.find(pin);
+    return it == pwmDuty.end() ? 0u : it->second;
+  }
+  inline void resetPwm() { pwmDuty.clear(); }
+}
+
+inline bool ledcAttachChannel(uint8_t pin, uint32_t, uint8_t, uint8_t) {
+  sil::pwmDuty[pin] = 0;
+  return true;
+}
+inline bool ledcAttach(uint8_t pin, uint32_t, uint8_t) { sil::pwmDuty[pin] = 0; return true; }
+inline void ledcSetup(uint8_t, uint32_t, uint8_t) {}
+inline void ledcAttachPin(uint8_t pin, uint8_t) { sil::pwmDuty[pin] = 0; }
+inline void ledcWrite(uint8_t pin, uint32_t duty) { sil::pwmDuty[pin] = duty; }
+
 /* --- maths helpers ------------------------------------------------------- */
 inline long map(long x, long in_min, long in_max, long out_min, long out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;

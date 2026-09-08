@@ -16,16 +16,29 @@ FLAGS=(-std=c++17 -x c++ -O1
        -I "$HERE/stubs" -I "$AJ")
 
 rc=0
-for h in a b; do
-  src="$HERE/harness_$h.cpp"
-  [ -f "$src" ] || continue
-  echo "--- building harness_$h ---"
-  if ! "$GXX" "${FLAGS[@]}" "$src" "$HERE/stubs/sil_globals.cpp" -o "$OUT/harness_$h.exe" 2>"$OUT/build_$h.log"; then
-    echo "BUILD FAILED — see $OUT/build_$h.log"
-    grep -m5 "error:" "$OUT/build_$h.log"
+
+# run <name> <source> [extra -D flags...]
+run() {
+  local name="$1" src="$2"; shift 2
+  [ -f "$src" ] || return 0
+  echo "--- building $name ---"
+  if ! "$GXX" "${FLAGS[@]}" "$@" "$src" "$HERE/stubs/sil_globals.cpp" \
+        -o "$OUT/$name.exe" 2>"$OUT/build_$name.log"; then
+    echo "BUILD FAILED — see $OUT/build_$name.log"
+    grep -m5 "error:" "$OUT/build_$name.log"
     rc=1
-    continue
+    return 0
   fi
-  "$OUT/harness_$h.exe" || rc=1
-done
+  "$OUT/$name.exe" || rc=1
+}
+
+run harness_a "$HERE/harness_a.cpp"
+
+#  §7.5 invariant 14 asks for both TRACK_LINE_WIDE branches to be exercised,
+#  not merely compiled, so ESP32 B runs twice. The switches are #ifndef-guarded,
+#  which is what lets -D reach them.
+run harness_b       "$HERE/harness_b.cpp"
+run harness_b_wide0 "$HERE/harness_b.cpp" -DTRACK_LINE_WIDE=0
+run harness_b_rev1  "$HERE/harness_b.cpp" -DREVERSE_STEER_INVERT=1
+
 exit $rc

@@ -307,3 +307,62 @@ INT_MAX, and an injection-shaped action string).
 checkpoint count and the reverse-drift model.
 
 **Commit:** next.
+
+---
+
+## Iteration 6 — 2026-09-08 17:34
+
+**Phase:** 3 (SIL harness) — ESP32 B
+**Target:** §7.5 invariants 10-15.
+
+**Added:** `sil/harness_b.cpp`, LEDC stubs in the prelude so motor duty can be
+observed (invariant 12 needs proof the motors actually reach zero, and the
+motors are driven through `ledcWrite`, which nothing was capturing).
+
+**First run: 14 passed, 1 failed — my assertion was wrong, not the firmware.**
+
+**Hypothesis (wrong):** a clean-IR crossing must be counted exactly once at
+every crossing duration tested.
+
+**Why it was wrong:** the shortest cell in the sweep is a 40 ms crossing, which
+is *below* `CHECKPOINT_DEBOUNCE_MS` (50 ms). It must be missed — that is the
+debounce doing its job. I had printed a note saying exactly that in the same
+function while still asserting the opposite.
+
+**Change:** the exactly-once assertion now applies to crossings the debounce can
+see, and a separate assertion requires the 40 ms crossing to be missed on all
+ten runs. If that ever starts counting, the debounce has broken.
+
+**Result:** 15 passed, 0 failed. `build.sh` now also runs ESP32 B with
+`TRACK_LINE_WIDE=0` and `REVERSE_STEER_INVERT=1`, satisfying invariant 14's
+"exercised", not merely "compiled". Totals: **131 checks, all passing** across
+four harness builds.
+
+**Real finding — checkpoint counting under IR dropout.** Monte Carlo, 10 runs
+per cell, 4 glitch levels x 5 crossing durations. With a clean sensor the count
+is exact at every crossing the debounce can see. With dropout it degrades fast:
+33 % miscounts at 5 % sample dropout, 83 % at 15 %, 100 % at 30 %.
+
+The mechanism is in `checkpointReached()`: one bad sample clears `cpActive`,
+stamps `cpClearedAt = now`, and resets `cpCounted`, so recovery needs a fresh
+50 ms of continuous black *and* 150 ms since that stamp. On a short crossing
+there is no time left. Two of the 5 %/400 ms runs double-counted rather than
+missed, which is worse in one respect — position then runs ahead of reality.
+
+Written up as **RECOMMENDATIONS item 29**, in section A rather than fixed,
+because the cheap fix (stop stamping `cpClearedAt` on a momentary dropout) is a
+behaviour change and it sits next to a locked parameter. §4.3 and §5.3 both make
+that a stop-and-ask, not a decision for me.
+
+**Reverse drift** modelled per invariant 15 and written up as item 31: both
+switch values diverge, confirming item 27, but at different rates
+(`INVERT=0`: 0.054 / 0.294 / 1.445 m over 1 / 2 / 4 pot spacings; `INVERT=1`:
+0.102 / 0.150 / 0.338 m). Default not changed — a bang-bang model with assumed
+geometry is not evidence for changing a bench-test default. Logged as something
+to measure.
+
+**Also written:** `sil/SIL_RESULTS.md`, labelled SIL in the title, in every table
+heading and in a closing section that states plainly what the simulation cannot
+tell you.
+
+**Commit:** next.

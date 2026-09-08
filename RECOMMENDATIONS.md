@@ -128,9 +128,51 @@ change on this whole list.
 followed by a single reverse run home is much more reliable than hopping back and
 forth between pots.
 
----
+**29. A single dropped IR sample can cost you a whole checkpoint, and the
+penalty is 150 ms rather than 5 ms.** Found in Phase 3 by Monte Carlo over
+`checkpointReached()` — see `sil/SIL_RESULTS.md` §3 for the full table.
 
-## B. Applied in the code
+`checkpointReached()` requires both checkpoint sensors to read black
+*continuously* for `CHECKPOINT_DEBOUNCE_MS` (50 ms, a locked parameter). One
+noisy sample in the middle of a crossing does three things at once: it clears
+`cpActive`, it stamps `cpClearedAt = now`, and it resets `cpCounted`. The next
+count then needs 50 ms of fresh continuous black **and** `CHECKPOINT_CLEAR_MS`
+(150 ms) to have elapsed since that stamp. On a short crossing the line is gone
+before either condition can be met.
+
+Simulated miscount rate over one crossing, 40 runs per level, excluding the
+40 ms crossing which is under the debounce and must be missed by design:
+
+| IR sample dropout | miscounts |
+|-------------------|-----------|
+| 0 % | 0 % |
+| 5 % | 33 % (11 missed, 2 double-counted) |
+| 15 % | 83 % |
+| 30 % | 100 % |
+
+Why it matters: item 2 says position has no absolute reference, so one missed
+line desynchronises the robot permanently until a power cycle. Combined, a
+handful of dusty samples during one crossing puts the robot at the wrong pot for
+the rest of the run — and it will keep watering confidently at the wrong plant.
+Bright stage lighting on IR sensors is on the demo-day risk list for exactly
+this reason.
+
+**Nothing has been changed.** Three reasons to decide as a team rather than
+have me pick:
+
+- The 50 ms debounce is a locked parameter from the paper. It is *not* the part
+  I would change, but any discussion of this lands next to it.
+- `CHECKPOINT_CLEAR_MS` (150 ms) is **not** locked, and the cheap fix is to stop
+  stamping `cpClearedAt` on a momentary dropout — only stamp it once the sensors
+  have been continuously clear for some interval. That is a behaviour change, so
+  it is your call, not mine.
+- The alternative fix is physical and may be better: a wider checkpoint line.
+  The debounce needs 50 ms of continuous black, which at carriage speed *v* is
+  0.05·*v* metres. Measure *v* on the bench and make the line at least that wide
+  with margin.
+
+Severity: high · Likelihood on demo day: medium · Effort to fix: minutes for the
+timing change, or a strip of tape for the physical one.
 
 **4. BTS7960 wired natively instead of PWM+DIR.** A BTS7960 expects two PWM
 inputs (RPWM and LPWM), not one PWM and one direction bit. The original pin
@@ -235,9 +277,38 @@ slightly increases the risk it is there to remove.
 analogue pin in both sketches is an ADC1 pin, which is why the given pin map
 works.
 
----
+**30. The five bench-test switches could not actually be switched from a build
+command, so "both branches compile" had never been tested.** Found in Phase 1
+when two matrix rows that should have differed came out byte-identical.
 
-## C. Before a public demo
+All five were plain `#define`s:
+
+```c
+#define CHECKPOINT_USES_INNER_SENSORS 0
+```
+
+A `#define` in the file always wins over a `-D` on the command line — the
+compiler takes the later definition and emits a `"... redefined"` warning. So
+every attempt to build the alternate branch silently rebuilt the default one.
+Each of the four ESP32 B switch rows and the ESP32 A `COOLDOWN_PER_POT=1` row
+reported PASS while compiling exactly the same code as its default.
+
+Each switch is now wrapped:
+
+```c
+#ifndef CHECKPOINT_USES_INNER_SENSORS
+#define CHECKPOINT_USES_INNER_SENSORS 0
+#endif
+```
+
+**Every published default is unchanged** (`0`, `0`, `1`, `0`, `1`). With no `-D`
+on the command line the preprocessor output is identical to before, so this is
+not a change to anyone's bench-test decision — it only makes the switches
+reachable from `tools/build_matrix.sh`. All eleven matrix rows now pass and the
+variant rows differ in size from their defaults, which is the evidence they are
+genuinely being compiled.
+
+Severity: medium · Likelihood on demo day: n/a · Effort to fix: done.
 
 **14. Boot strapping pins.** GPIO 12 (ESP32 A servo, ESP32 B motor) and GPIO 15
 (ESP32 B motor) are strapping pins. If GPIO 12 is pulled high at boot the board
@@ -277,3 +348,32 @@ make it immediate.
 every GPIO into high impedance. With active-LOW relays a floating input can let a
 pump twitch on for the length of the reset. Fit 10 kΩ pull-ups to 3.3 V on
 GPIO 26 and GPIO 27 before you rely on the watchdog.
+
+**31. Reverse drift is now quantified, and the model disagrees with the switch
+default over long runs.** Phase 3, `sil/SIL_RESULTS.md` §4.
+
+Item 27 argues reverse line following diverges for either sign of
+`REVERSE_STEER_INVERT`. A kinematic simulation of that argument, using the
+firmware's own `SPEED_REVERSE` and `SPEED_TURN_INNER_REV`, agrees — the offset
+grows with distance in both cases:
+
+| `REVERSE_STEER_INVERT` | 1 pot | 2 pots | 4 pots |
+|------------------------|-------|--------|--------|
+| 0 (default) | 0.054 m | 0.294 m | 1.445 m |
+| 1 | 0.102 m | 0.150 m | 0.338 m |
+
+Both diverge, so item 27 stands. But they diverge at different rates: the
+default is better over one pot spacing and roughly four times worse over four.
+
+**Do not change the default on the strength of this.** It is a 5 ms bang-bang
+integration with assumed geometry — sensor bar 0.12 m ahead of the axis, 0.15 m
+wheel track, 0.0016 m/s per PWM unit — and no mass, slip or friction. The
+assumptions are listed in `SIL_RESULTS.md` so you can vary them. What it is good
+for is telling you what to look for on the bench: run `TARGET:5` then `TARGET:1`
+with each value of the switch and measure the offset after one pot and after
+four. If `INVERT=1` really does hold better over long reverse runs, that is worth
+knowing before the demo; if it does not, the model was wrong and the default
+stays.
+
+Severity: low · Likelihood on demo day: medium (only matters if you reverse more
+than one pot spacing) · Effort to fix: needs hardware.
