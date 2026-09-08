@@ -13,6 +13,10 @@ import { useEffect, useState } from 'react';
  *  As a CSS background-image the same SVG is rasterised once and cached, so
  *  the filters cost nothing after first paint and WebGL gets its frames back.
  *
+ *  Split-complementary: violet-plum ground, green foliage, two low warm
+ *  passages in amber. Green over violet is also how a painter gets foliage
+ *  to read as lit rather than as a flat wash.
+ *
  *  The painting itself, in layers:
  *    1. Pigment, clean. Palette-knife fields, leaves and water in a warm
  *       viridian family, with knife filters roughening the edges.
@@ -47,7 +51,7 @@ const WATER = [
 const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' preserveAspectRatio='xMidYMid slice'>
 <defs>
 <linearGradient id='w' x1='0.1' y1='0' x2='0.9' y2='1'>
-<stop offset='0%' stop-color='%231D4137'/><stop offset='42%' stop-color='%2317332C'/><stop offset='100%' stop-color='%23122A24'/>
+<stop offset='0%' stop-color='%23342A4F'/><stop offset='42%' stop-color='%23271F3B'/><stop offset='100%' stop-color='%231D1730'/>
 </linearGradient>
 <filter id='k' x='-15%' y='-15%' width='130%' height='130%'>
 <feTurbulence type='fractalNoise' baseFrequency='0.022' numOctaves='3' seed='9'/>
@@ -69,16 +73,16 @@ const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' pres
 </defs>
 <rect width='1440' height='900' fill='url(%23w)'/>
 <g filter='url(%23k)'>
-<path d='M-80 90 C 240 20, 520 170, 780 96 C 1000 34, 1200 130, 1520 46 L1520 -60 L-80 -60 Z' fill='%2327584A' opacity='0.85'/>
-<path d='M-80 800 C 260 742, 430 880, 720 830 C 1010 782, 1240 886, 1520 820 L1520 980 L-80 980 Z' fill='%230E2620' opacity='0.9'/>
-<ellipse cx='1210' cy='250' rx='330' ry='200' fill='%232F6B57' opacity='0.35'/>
-<ellipse cx='190' cy='640' rx='280' ry='185' fill='%2320493D' opacity='0.45'/>
-<ellipse cx='640' cy='430' rx='420' ry='150' fill='%231B4034' opacity='0.3'/>
+<path d='M-80 90 C 240 20, 520 170, 780 96 C 1000 34, 1200 130, 1520 46 L1520 -60 L-80 -60 Z' fill='%23433566' opacity='0.85'/>
+<path d='M-80 800 C 260 742, 430 880, 720 830 C 1010 782, 1240 886, 1520 820 L1520 980 L-80 980 Z' fill='%23191327' opacity='0.9'/>
+<ellipse cx='1210' cy='250' rx='330' ry='200' fill='%234E3C7A' opacity='0.35'/>
+<ellipse cx='190' cy='640' rx='280' ry='185' fill='%23332853' opacity='0.45'/>
+<ellipse cx='640' cy='430' rx='420' ry='150' fill='%232C2247' opacity='0.3'/><ellipse cx='1090' cy='120' rx='210' ry='120' fill='%23C98A2E' opacity='0.14'/><ellipse cx='330' cy='858' rx='260' ry='90' fill='%23B4762A' opacity='0.1'/>
 </g>
 <g filter='url(%23kf)'>
 ${WATER.map(
   (s) =>
-    `<rect x='${s.x}' y='${s.y}' width='${s.w}' height='11' rx='5' fill='%2357A98C' opacity='${s.o}'/>`,
+    `<rect x='${s.x}' y='${s.y}' width='${s.w}' height='11' rx='5' fill='%234FBE97' opacity='${s.o}'/>`,
 ).join('')}
 </g>
 <g filter='url(%23kf)'>
@@ -86,7 +90,7 @@ ${LEAVES.map(
   (l) =>
     `<g transform='translate(${l.x} ${l.y}) rotate(${l.r}) scale(${l.s})' opacity='${l.o}'>` +
     `<path d='M0 0 C 32 -48, 94 -54, 126 -8 C 96 42, 30 46, 0 0 Z' fill='${l.f}'/>` +
-    `<path d='M2 -2 C 42 -16, 88 -14, 126 -8' stroke='%230E2620' stroke-width='2.5' fill='none' opacity='0.45'/>` +
+    `<path d='M2 -2 C 42 -16, 88 -14, 126 -8' stroke='%23191327' stroke-width='2.5' fill='none' opacity='0.45'/>` +
     `</g>`,
 ).join('')}
 </g>
@@ -159,7 +163,7 @@ export function PaintedBackdrop() {
       )}
       {/*  A short settle at the top so the header and the connection line always
           sit on calm ground, whatever the painting is doing up there. */}
-      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-canvas/80 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-canvas/75 to-transparent" />
     </div>
   );
 }

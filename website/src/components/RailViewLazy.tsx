@@ -21,7 +21,7 @@ export function RailViewLazy(props: Props) {
     <Suspense
       fallback={
         <div
-          className="h-[280px] w-full sm:h-[340px] lg:h-[400px]"
+          className="h-[232px] w-full sm:h-[300px] lg:h-[376px]"
           aria-hidden="true"
         />
       }

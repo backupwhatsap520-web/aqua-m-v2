@@ -55,7 +55,7 @@ export default function App() {
   ];
 
   const toneText = {
-    accent: 'text-aqua',
+    accent: 'text-accent',
     warn: 'text-warn',
     fault: 'text-fault',
   }[conn.tone];
@@ -68,7 +68,7 @@ export default function App() {
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-6">
           <span className="text-sm font-semibold tracking-tight text-ink-100">
-            Aqua<span className="text-aqua">-M</span> V2
+            Aqua<span className="text-accent">-M</span> V2
           </span>
 
           <nav aria-label="Sections">

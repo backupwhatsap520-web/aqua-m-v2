@@ -146,7 +146,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-phi-4">
       {/* --- the rail, and the readings taken from it -------------------- */}
       <section className="surface overflow-hidden">
         <RailViewLazy
@@ -200,7 +200,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+      <div className="grid gap-phi-4 lg:grid-cols-phi">
         {/* --- history ----------------------------------------------------- */}
         <Panel
           title="Last 10 minutes"
@@ -230,7 +230,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
         </Panel>
 
         {/* --- state ------------------------------------------------------- */}
-        <div className="space-y-5">
+        <div className="space-y-phi-4">
           <Panel title="State">
             <dl className="divide-y divide-ink-800">
               <Field label="Mission">
@@ -282,7 +282,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_1.6fr]">
+      <div className="grid gap-phi-4 lg:grid-cols-phi-r">
         {/* --- control ----------------------------------------------------- */}
         <Panel title="Control">
           <div className="mb-4 grid grid-cols-5 gap-1.5">
@@ -296,7 +296,7 @@ export function MonitoringTab({ feed }: { feed: DeviceFeed }) {
                   onClick={() => run(`pot ${p}`, 'goto', p)}
                   className={`num min-h-[44px] cursor-pointer rounded-lg border text-sm transition-all duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 ${
                     here
-                      ? 'border-aqua/50 bg-aqua-wash text-aqua'
+                      ? 'border-accent/50 bg-accent-wash text-accent'
                       : 'border-ink-700 bg-ink-850 text-ink-300 hover:border-ink-600 hover:text-ink-100'
                   }`}
                 >

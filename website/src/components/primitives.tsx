@@ -106,7 +106,7 @@ export function Tag({
   children: ReactNode;
 }) {
   const tones = {
-    accent: 'border-aqua/35 bg-aqua-wash text-aqua',
+    accent: 'border-accent/35 bg-accent-wash text-accent',
     warn: 'border-warn/35 bg-warn/10 text-warn',
     fault: 'border-fault/35 bg-fault/10 text-fault',
     neutral: 'border-ink-700 bg-ink-850 text-ink-300',

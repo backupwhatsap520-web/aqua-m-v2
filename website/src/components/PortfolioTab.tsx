@@ -44,19 +44,19 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
   const intro = (delay = 0) => (reduce ? {} : enter(delay));
 
   return (
-    <div className="space-y-20 pb-12 sm:space-y-28">
+    <div className="space-y-phi-6 pb-phi-5 sm:space-y-phi-7">
       {/* --- 1. hero: asymmetric split, the rail carries the visual weight -- */}
-      <section className="grid items-center gap-8 lg:grid-cols-[1fr_1.15fr] lg:gap-12">
+      <section className="grid items-center gap-phi-5 lg:grid-cols-phi-r lg:gap-phi-6">
         <motion.div {...intro()}>
-          <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.18em] text-aqua">
+          <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.18em] text-accent">
             ISIF / IYSA
           </p>
-          <h1 className="text-4xl font-semibold leading-[1.05] tracking-tightest text-ink-100 sm:text-5xl lg:text-6xl">
+          <h1 className="text-phi-xl font-semibold tracking-tightest text-ink-100 lg:text-phi-2xl">
             Five pots.
             <br />
             One robot.
             <br />
-            <span className="text-aqua">No guessing.</span>
+            <span className="text-accent">No guessing.</span>
           </h1>
           <p className="mt-6 max-w-md text-base leading-relaxed text-ink-300">
             A rail-guided robot plants a probe in each pot, asks Gemini what the plant needs,
@@ -76,10 +76,10 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
       </section>
 
       {/* --- 2. how it decides: offset columns with a numbered spine ------- */}
-      <section className="grid gap-10 lg:grid-cols-[0.85fr_1fr] lg:gap-16">
+      <section className="grid gap-phi-5 lg:grid-cols-[1fr_1.618fr] lg:gap-phi-6">
         <motion.h2
           {...anim()}
-          className="text-2xl font-semibold leading-tight tracking-tightest text-ink-100 sm:text-3xl"
+          className="text-phi-lg font-semibold tracking-tightest text-ink-100 sm:text-phi-xl"
         >
           Two ways to decide, and a rule about which one wins
         </motion.h2>
@@ -87,17 +87,17 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
         <div className="space-y-8">
           {[
             {
-              icon: <CloudSlash size={20} className="text-aqua" />,
+              icon: <CloudSlash size={20} className="text-accent" />,
               head: 'Gemini decides how long to water',
               body: 'The board posts soil, pH, temperature, humidity, light and the local weather straight to Google AI Studio. No server sits in between. The reply is clamped to ten seconds of water and five of fertiliser before it can reach a pump.',
             },
             {
-              icon: <ArrowsLeftRight size={20} className="text-aqua" />,
+              icon: <ArrowsLeftRight size={20} className="text-accent" />,
               head: 'The board decides when the network fails',
               body: 'Below 30 percent soil moisture it waters for eight seconds, between 30 and 60 for four, above that not at all. Over 35 degrees adds two seconds. Fertiliser has no offline rule on purpose: guessing a nutrient dose from a moisture reading is worse than waiting.',
             },
             {
-              icon: <ShieldCheck size={20} className="text-aqua" />,
+              icon: <ShieldCheck size={20} className="text-accent" />,
               head: 'The firmware always has the last word',
               body: 'Relays are active-low, so a reset opens them. A watchdog runs every loop and can only ever turn a pump off. No network call is issued while a pump is running, because a slow reply would outlast the watering it was meant to control.',
             },
@@ -121,7 +121,7 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
       <section>
         <motion.h2
           {...anim()}
-          className="mb-8 text-2xl font-semibold tracking-tightest text-ink-100 sm:text-3xl"
+          className="mb-phi-5 text-phi-lg font-semibold tracking-tightest text-ink-100 sm:text-phi-xl"
         >
           One visit to one pot
         </motion.h2>
@@ -134,7 +134,7 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
             { t: 'Water and lift', d: 'The pump runs for exactly that long, the arm lifts, and the robot is free to move again.' },
           ].map((step, i) => (
             <motion.div key={step.t} {...anim(0.06 * i)} className="bg-ink-900 p-5">
-              <span className="num mb-3 block text-xs text-aqua">{`0${i + 1}`}</span>
+              <span className="num mb-3 block text-xs text-accent">{`0${i + 1}`}</span>
               <h3 className="mb-2 text-sm font-medium text-ink-100">{step.t}</h3>
               <p className="text-[13px] leading-relaxed text-ink-400">{step.d}</p>
             </motion.div>
@@ -143,11 +143,11 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
       </section>
 
       {/* --- 4. what is proven, in figures and plain sentences ------------- */}
-      <section className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
+      <section className="grid gap-phi-5 lg:grid-cols-phi lg:gap-phi-6">
         <div>
           <motion.h2
             {...anim()}
-            className="mb-6 text-2xl font-semibold tracking-tightest text-ink-100 sm:text-3xl"
+            className="mb-phi-4 text-phi-lg font-semibold tracking-tightest text-ink-100 sm:text-phi-xl"
           >
             What has actually been checked
           </motion.h2>
@@ -160,7 +160,7 @@ export function PortfolioTab({ feed }: { feed: DeviceFeed }) {
               { n: '0', l: 'hardware measurements', s: 'the boards had not arrived' },
             ].map((f) => (
               <div key={f.l}>
-                <dt className="num text-3xl font-medium text-ink-100 sm:text-4xl">{f.n}</dt>
+                <dt className="num text-phi-lg font-medium text-ink-100 sm:text-phi-xl">{f.n}</dt>
                 <dd className="mt-1.5 text-sm text-ink-300">{f.l}</dd>
                 <dd className="mt-0.5 text-xs leading-relaxed text-ink-400">{f.s}</dd>
               </div>

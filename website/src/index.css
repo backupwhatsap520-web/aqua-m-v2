@@ -14,7 +14,7 @@
   /*  Visible focus, always. A judge tabbing through the control panel is
    *  exactly the person who needs it. */
   :focus-visible {
-    @apply outline-none ring-2 ring-aqua ring-offset-2 ring-offset-canvas;
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-canvas;
   }
 
   @media (prefers-reduced-motion: reduce) {
