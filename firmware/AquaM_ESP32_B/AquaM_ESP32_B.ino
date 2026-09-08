@@ -34,8 +34,11 @@
  *      sensors keep the robot on the track.   <-- the physical Aqua-M V2
  *  1 = the reverse.
  *  Verify: push the robot along the track by hand and watch which pair goes
- *  black only when it crosses a perpendicular line. */
+ *  black only when it crosses a perpendicular line.
+ *  Guarded so the build matrix can override it with -D; default unchanged. */
+#ifndef CHECKPOINT_USES_INNER_SENSORS
 #define CHECKPOINT_USES_INNER_SENSORS 0
+#endif
 
 /*  1b. TRACK LINE GEOMETRY — how the two tracking sensors sit on the line.
  *  1 = WIDE line: when centred, BOTH tracking sensors read black.
@@ -44,8 +47,11 @@
  *      when centred BOTH read white and only one goes black on a drift.
  *      Line-loss cannot be detected in this geometry — both-white is the
  *      normal state — so the 45 s move timeout is the safety net instead.
- *  Verify: park the robot centred on the track and read both sensors. */
+ *  Verify: park the robot centred on the track and read both sensors.
+ *  Guarded so the build matrix can override it with -D; default unchanged. */
+#ifndef TRACK_LINE_WIDE
 #define TRACK_LINE_WIDE 1
+#endif
 
 /*  1c. REVERSE STEERING SIGN
  *  0 = reverse uses the same correction sign as forward.
@@ -53,14 +59,20 @@
  *  Read section 11 of this file before testing: with the sensors mounted at
  *  the front, reverse line following is unstable for either sign. The switch
  *  exists so you can see which one wanders less over the short distance
- *  between two pots. */
+ *  between two pots.
+ *  Guarded so the build matrix can override it with -D; default unchanged. */
+#ifndef REVERSE_STEER_INVERT
 #define REVERSE_STEER_INVERT 0
+#endif
 
 /*  1d. MOTOR DRIVER WIRING
  *  1 = BTS7960 native: both pins of a motor carry PWM (RPWM / LPWM),
  *      R_EN and L_EN tied to +5 V. No extra parts needed.
- *  0 = L298N style: pin A carries PWM, pin B is a plain direction bit. */
+ *  0 = L298N style: pin A carries PWM, pin B is a plain direction bit.
+ *  Guarded so the build matrix can override it with -D; default unchanged. */
+#ifndef MOTOR_DRIVER_DUAL_PWM
 #define MOTOR_DRIVER_DUAL_PWM 1
+#endif
 
 /* ===========================================================================
  *  2. PIN MAPPING

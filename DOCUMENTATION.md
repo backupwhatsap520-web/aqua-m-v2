@@ -377,6 +377,51 @@ Tighten these before any public demo — see `RECOMMENDATIONS.md`, item 5.
 (Mobizt), ArduinoJson 6 or 7, DHT sensor library (Adafruit), BH1750
 (Christopher Laws), LiquidCrystal_I2C (Frank de Brabander).
 
+### Verified toolchain
+
+Both sketches were compiled against every combination below on 2026-09-08.
+All eleven passed. Pin these versions if a future build misbehaves — "some
+version of the ESP32 core" is what costs an evening on a deadline.
+
+| Component | Versions verified |
+|-----------|-------------------|
+| arduino-cli | 1.2.0 (the copy bundled in Arduino IDE 2 works; no separate install needed) |
+| `esp32:esp32` core | **2.0.17** and **3.3.11** — both build cleanly |
+| ArduinoJson | **6.21.5** and **7.4.3** — the `JSON_DOC` macro in A §3 bridges them correctly |
+| Firebase ESP32 Client (Mobizt) | **4.4.17** — the 4.x line, header `FirebaseESP32.h`. Not the newer *Firebase Arduino Client Library*, which uses a different API |
+| ESP32Servo | 3.2.1 |
+| DHT sensor library (Adafruit) | 1.4.7 |
+| Adafruit Unified Sensor | 1.1.15 |
+| BH1750 (Christopher Laws) | 1.3.0 |
+| LiquidCrystal I2C | 1.1.2 |
+
+Flash and RAM, `huge_app` partition (3 145 728 B flash, 327 680 B RAM):
+
+| Sketch | Core | Flash | RAM |
+|--------|------|-------|-----|
+| A | 2.0.17 | 1 256 161 B (40 %) | 50 596 B (15 %) |
+| A | 3.3.11 | 1 401 466 B (44 %) | 53 536 B (16 %) |
+| B | 2.0.17 | 286 625 B (9 %) | 22 204 B (6 %) |
+| B | 3.3.11 | 298 591 B (9 %) | 22 912 B (6 %) |
+
+Core 3.x costs ESP32 A about 145 kB more flash than 2.0.17. Both fit with wide
+headroom, so either core is a safe choice.
+
+Reproduce the whole matrix with `bash tools/build_matrix.sh`. The five
+bench-test switches are `#ifndef`-guarded, so the script can compile both
+branches of each without editing any source file:
+
+```bash
+arduino-cli compile --fqbn "esp32:esp32:esp32:PartitionScheme=huge_app" \
+  --build-property "compiler.cpp.extra_flags=-DTRACK_LINE_WIDE=0" \
+  firmware/AquaM_ESP32_B
+```
+
+**A note on the Windows setup used here.** If the Arduino sketchbook sits inside
+OneDrive, library installs fail while extracting (`creating temp dir ...: The
+system cannot find the file specified`). Point the sketchbook somewhere outside
+OneDrive, or set `ARDUINO_DIRECTORIES_USER`, and it works.
+
 Fill in the block marked *USER CONFIGURATION* at the top of
 `AquaM_ESP32_A.ino` first: Wi-Fi, Firebase URL and secret, Gemini key, and the
 wttr.in location.
