@@ -1,0 +1,22 @@
+# Rahasia — jangan pernah ikut ter-commit
+.env
+.env.*
+!.env.example
+*.key
+secrets.h
+
+# Node / website
+node_modules/
+dist/
+build/
+.vite/
+
+# Build Arduino
+build/
+*.bin
+*.elf
+
+# Sistem
+.DS_Store
+Thumbs.db
+desktop.ini
