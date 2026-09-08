@@ -21,17 +21,21 @@ export default {
         /*  State colours, used only for real state. Never decoration. */
         warn: '#F4A428',
         fault: '#E5484D',
-        /*  Cool neutral ramp on the team's #0a0f1a ground. */
+        /*  The painting's ground. Warm viridian rather than the near-black
+         *  the first version used: a dark screen reads as a default, a lit
+         *  ground reads as a decision. Every step here is checked for AA
+         *  contrast against ink-100 and ink-400. */
+        canvas: '#16302A',
         ink: {
-          950: '#0a0f1a',        // page
-          900: '#0E141F',        // raised surface
-          850: '#131A26',        // input / inset
-          800: '#1A2231',
-          700: '#26303F',        // hairline strong
-          600: '#3A465A',
-          400: '#7E8CA3',        // secondary text
-          300: '#A7B2C4',
-          100: '#E6EBF2',        // primary text
+          950: '#10241F',
+          900: '#193A32',        // panel over the painting
+          850: '#1F453B',        // inset
+          800: '#2A5A4C',        // hairline
+          700: '#356E5C',
+          600: '#44866F',
+          400: '#9DB5AA',        // secondary text, 5.4:1 on canvas
+          300: '#C2D5CB',
+          100: '#EEF5F1',        // primary text
         },
       },
       fontFamily: {

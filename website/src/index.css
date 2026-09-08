@@ -8,29 +8,13 @@
   }
 
   body {
-    @apply bg-ink-950 text-ink-100 font-sans antialiased;
-  }
-
-  /*  One soft light source, low and off-centre, so the page has a direction
-   *  instead of a symmetric glow behind everything. Fixed layer rather than
-   *  background-attachment, which repaints on every scroll frame. */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background: radial-gradient(
-      70rem 50rem at 18% -12%,
-      rgba(6, 214, 160, 0.07),
-      transparent 62%
-    );
+    @apply bg-canvas text-ink-100 font-sans antialiased;
   }
 
   /*  Visible focus, always. A judge tabbing through the control panel is
    *  exactly the person who needs it. */
   :focus-visible {
-    @apply outline-none ring-2 ring-aqua ring-offset-2 ring-offset-ink-950;
+    @apply outline-none ring-2 ring-aqua ring-offset-2 ring-offset-canvas;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -59,8 +43,13 @@
     @apply border-l border-ink-800;
   }
 
+  /*  Panels sit ON the painting, so they need enough body to hold text
+   *  against a busy ground, and a blur so the paint reads through rather
+   *  than fighting the numbers. */
   .surface {
-    @apply rounded-xl border border-ink-800 bg-ink-900/70;
+    @apply rounded-xl border border-ink-800/80 bg-ink-900/80 backdrop-blur-[3px];
+    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+      0 18px 40px -24px rgba(0, 0, 0, 0.75);
   }
 
   .skeleton {

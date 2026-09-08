@@ -26,7 +26,7 @@ function potX(pot: number) {
 }
 
 const AQUA = '#06D6A0';
-const INK = '#0E141F';
+const INK = '#16352B';   // the bench the rail stands on, inside the painting
 
 function Rail() {
   return (
@@ -34,20 +34,20 @@ function Rail() {
       {/* beam */}
       <mesh position={[0, -0.62, 0]}>
         <boxGeometry args={[RAIL_HALF * 2 + 1.4, 0.09, 0.34]} />
-        <meshStandardMaterial color="#26303F" roughness={0.75} metalness={0.35} />
+        <meshStandardMaterial color="#2A5A4C" roughness={0.75} metalness={0.35} />
       </mesh>
       {/* end stops */}
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * (RAIL_HALF + 0.7), -0.5, 0]}>
           <boxGeometry args={[0.12, 0.32, 0.4]} />
-          <meshStandardMaterial color="#3A465A" roughness={0.6} metalness={0.4} />
+          <meshStandardMaterial color="#44866F" roughness={0.6} metalness={0.4} />
         </mesh>
       ))}
       {/* checkpoint lines, one per pot: what the IR pair actually counts */}
       {Array.from({ length: POT_COUNT }, (_, i) => (
         <mesh key={i} position={[potX(i + 1), -0.567, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.07, 0.34]} />
-          <meshBasicMaterial color="#0a0f1a" />
+          <meshBasicMaterial color="#10241F" />
         </mesh>
       ))}
     </group>

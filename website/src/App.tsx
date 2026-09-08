@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PaintedBackdrop } from './components/PaintedBackdrop';
 import { useDeviceData } from './hooks/useDeviceData';
 import { MonitoringTab } from './components/MonitoringTab';
 import { PortfolioTab } from './components/PortfolioTab';
@@ -60,7 +61,9 @@ export default function App() {
   }[conn.tone];
 
   return (
-    <div className="mx-auto flex min-h-[100dvh] max-w-[1200px] flex-col px-4 py-5 sm:px-6 sm:py-7">
+    <>
+      <PaintedBackdrop />
+      <div className="mx-auto flex min-h-[100dvh] max-w-[1200px] flex-col px-4 py-5 sm:px-6 sm:py-7">
       {/* nav: one line, under 80px, tabs and status share it */}
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-6">
@@ -115,6 +118,7 @@ export default function App() {
         Readings come from ESP32 A via Firebase. Figures quoted on the project page are
         software-in-the-loop simulation, not hardware measurement.
       </footer>
-    </div>
+      </div>
+    </>
   );
 }
