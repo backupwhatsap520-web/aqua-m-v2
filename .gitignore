@@ -23,3 +23,6 @@ desktop.ini
 
 # Skill pihak ketiga (ui-ux-pro-max) - dipasang lokal, tidak ikut repo
 .claude/skills/
+
+# Berisi API key 21st.dev - jangan pernah ikut repo
+.mcp.json
