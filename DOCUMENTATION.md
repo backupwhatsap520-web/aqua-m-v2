@@ -448,3 +448,75 @@ npm install
 npm run dev               # http://localhost:5173
 npm run build             # dist/ — deploy to Firebase Hosting, Vercel or Netlify
 ```
+
+---
+
+## 11. BenchTest — how to read the output
+
+`tools/BenchTest/BenchTest.ino` is a wiring and calibration aid, separate from
+the robot firmware. Flash it to one board at a time and open the Serial Monitor
+at **115200 baud**. It streams raw ADC values every 200 ms and takes single-key
+commands. Press `h` for the menu.
+
+Pick the board at the top of the file:
+
+```c
+#define BENCH_BOARD_A 1     // 1 = ESP32 A, 0 = ESP32 B
+```
+
+### ESP32 A columns
+
+```
+ms      soil    pH      ldrL    ldrR    water   fert
+41200   3187    2204    1841    1902    off     off
+```
+
+- **soil** — raw ADC from the capacitive probe. Compare against the calibration
+  in §3: 3200 is the dry reference, 1075 the wet one. Hold the probe in air, then
+  in a glass of water. If air does not read near 3200 and water near 1075, the
+  numbers in §3 need replacing with what you actually measure.
+- **pH** — raw ADC. `PH_ADC_AT_4` (2200) and `PH_ADC_AT_9` (1500) are
+  placeholders, see RECOMMENDATIONS item 20. Read a pH 4 buffer and a pH 9
+  buffer, write down both numbers, and put them in §3.
+- **ldrL / ldrR** — solar tracker. Shade one side and confirm the two columns
+  move apart. If they move together, they are wired to the same node.
+- **water / fert** — relay state. `w` and `f` toggle them, `0` turns both off.
+  Listen for the click, and watch that neither turns on by itself at boot.
+
+### ESP32 B columns
+
+```
+ms      irLout  irLin   irRin   irRout  L_out  L_in  R_in  R_out
+41200   2612    1104    1180    2588    BLK    wht   wht   BLK
+```
+
+The last four columns apply `IR_THRESHOLD` (2000) to the raw values, so you can
+read the verdict directly. This is what resolves the two open switch questions
+in RECOMMENDATIONS section A:
+
+**`CHECKPOINT_USES_INNER_SENSORS`.** Push the robot along the track by hand and
+watch which pair flips to `BLK` *only* while crossing a perpendicular line. That
+pair is the checkpoint pair. If it is the outer pair, the default `0` is right.
+
+**`TRACK_LINE_WIDE`.** Park the robot centred on the track and read the two
+tracking sensors:
+
+| Both tracking sensors read | Meaning | Set |
+|----------------------------|---------|-----|
+| `BLK BLK` | the line covers both — wide line | `TRACK_LINE_WIDE 1` (default) |
+| `wht wht` | the line passes between them — straddled | `TRACK_LINE_WIDE 0` |
+
+Get this wrong in the wide direction and the robot reports `ERROR:LINE_LOST`
+within 2.5 s of a perfectly normal start.
+
+While you are here, note the actual black and white values. If they are not
+separated by a comfortable margin either side of 2000, adjust the sensor height
+before adjusting `IR_THRESHOLD` — height is the stronger lever.
+
+`1`–`4` sweep the four arm servos one at a time, `a` sweeps all four. The sweep
+is deliberately limited to 60–120° rather than full travel: this is a wiring
+check, and an arm with the probe fitted can hit the frame at an unexpected
+angle. **The motors are not driven by this sketch on purpose** — a bench test
+that can make the robot move is a bench test that drives itself off the table.
+
+`space` pauses the stream so you can read a value without it scrolling away.

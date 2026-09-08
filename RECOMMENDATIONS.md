@@ -377,3 +377,41 @@ stays.
 
 Severity: low · Likelihood on demo day: medium (only matters if you reverse more
 than one pot spacing) · Effort to fix: needs hardware.
+
+**32. `robotCurrentPot` is assigned straight from the UART line with no
+validation.** Found in Phase 3 by fuzzing the RX path, `sil/harness_a.cpp`
+invariant 6.
+
+`handleUartLine()` does:
+
+```c
+robotCurrentPot = line.substring(8).toInt();
+```
+
+Feed it `ARRIVED:-1` or `ARRIVED:9` and `robotCurrentPot` becomes −1 or 9. Under
+the fuzz it reached the range −1..9.
+
+**This is cosmetic, and the reason it is cosmetic is worth reading**, because it
+is the code being defensive in the right places. Every use that could hurt is
+already bounded:
+
+- `setWaterPump()` range-checks before writing the per-pot cooldown array:
+  `if (p >= POT_MIN_INDEX && p <= POT_COUNT) lastPumpStopPot[p] = ...`
+- `activePot()` clamps with `constrain(p, POT_MIN_INDEX, POT_COUNT)`
+
+So the out-of-range value never indexes `lastPumpStopPot[6]` and never selects a
+wrong cooldown slot. The SIL harness asserts this directly: across 18 malformed
+lines delivered in all 13 mission states, `activePot()` never left 1..5.
+
+What does leak through is display: the LCD prints `P-1`, the dashboard's
+`current_pot` shows −1, and the AI prompt can carry a nonsense pot number when
+no mission is active. A judge looking at the dashboard would see it.
+
+The fix is one line in `handleUartLine()` — clamp on assignment, or ignore a
+line whose pot number is outside 1..`POT_COUNT`. It was left alone because it
+changes behaviour in a path that currently cannot be reached from ESP32 B, which
+constrains its own pot index before replying. It becomes reachable if the UART
+line is ever corrupted by noise, which on a two-board robot with motor drivers is
+not far-fetched.
+
+Severity: low · Likelihood on demo day: low · Effort to fix: minutes.

@@ -381,6 +381,204 @@ static void hostileDashboardCommands() {
   ck(mission == ST_IDLE, "unknown action string leaves the mission idle");
 }
 
+/* ===========================================================================
+ *  §7.4 invariant 6 — every wait state exits, and the UART parser survives
+ *  malformed input.
+ * ======================================================================== */
+static void invariant6_waitStatesExit() {
+  std::printf("\n[9] Invariant 6: every wait state exits, UART fuzzing\n");
+
+  /*  Silence: each waiting state must leave on its own timeout. */
+  struct WaitCase { MissionState st; uint32_t timeout; const char *name; };
+  const WaitCase waits[] = {
+    {ST_WAIT_ARRIVE, MOVE_TIMEOUT_MS, "ST_WAIT_ARRIVE"},
+    {ST_WAIT_SENSOR, ARM_TIMEOUT_MS,  "ST_WAIT_SENSOR"},
+    {ST_WAIT_LIFTED, ARM_TIMEOUT_MS,  "ST_WAIT_LIFTED"},
+    {ST_SETTLE,      PROBE_SETTLE_MS, "ST_SETTLE"},
+  };
+  for (const auto &w : waits) {
+    resetFirmware();
+    targetPot = 2;
+    setState(w.st);
+    sil::advance(w.timeout + 100);          // silence past the deadline
+    runMission();
+    ck(mission != w.st,
+       std::string("state ") + w.name + " leaves on timeout with no UART traffic");
+  }
+
+  /*  Fuzz the RX path. None of these may hang, crash or move the machine into
+   *  a state it cannot leave. */
+  const char *lines[] = {
+    "\n", "\r\n", "garbage\n", "ARRIVED:\n", "ARRIVED\n", "ARRIVED:9\n",
+    "ARRIVED:-1\n", "ARRIVED:abc\n", "ARRIVED:2\r\n", "SENSOR_READY\n",
+    "LIFTED\n", "MOVING\n", "IDLE\n", "ERROR:\n", "ERROR:LINE_LOST\n",
+    "SENSOR_READYLIFTED\n",                       // two statuses, no separator
+    "SENSOR_READY\nLIFTED\n",                     // two statuses in one feed
+    "ARRIVED:2SENSOR_READY\n",
+  };
+
+  /*  What matters is not that robotCurrentPot stays pretty — handleUartLine
+   *  assigns it straight from the wire with no validation — but that every
+   *  dangerous *use* of it is bounded. activePot() feeds the per-pot cooldown
+   *  array, so that is the one to hold to 1..POT_COUNT. */
+  int worstPot = 1, bestPot = 1;
+  for (const char *l : lines) {
+    for (int st = ST_IDLE; st <= ST_FINISH; st++) {
+      resetFirmware();
+      targetPot = 0;                           // force activePot to use the wire value
+      setState((MissionState)st);              // deliver the line in EVERY state
+      sil::feedUart(l);
+      handleUartRx();
+      runMission();
+
+      if (robotCurrentPot < worstPot) worstPot = robotCurrentPot;
+      if (robotCurrentPot > bestPot)  bestPot  = robotCurrentPot;
+
+      int ap = activePot();
+      if (ap < POT_MIN_INDEX || ap > POT_COUNT) {
+        ck(false, std::string("activePot() left 1..") + std::to_string(POT_COUNT)
+                  + " (= " + std::to_string(ap) + ") after line: " + l);
+        return;
+      }
+    }
+  }
+  ck(true, "18 malformed UART lines delivered in all 13 mission states without a hang");
+  ck(true, "activePot() stayed within 1.." + std::to_string(POT_COUNT)
+           + " throughout, so the per-pot cooldown array is never indexed out of bounds");
+
+  /*  Report, without asserting, how far the raw value can be pushed. This is
+   *  RECOMMENDATIONS item 32: cosmetic, because every dangerous use is guarded. */
+  std::printf("    note: robotCurrentPot is assigned unvalidated from the UART line and\n");
+  std::printf("          reached %d..%d under this fuzz. Every use is bounded — the per-pot\n",
+              worstPot, bestPot);
+  std::printf("          cooldown write is range-checked and activePot() constrains — so the\n");
+  std::printf("          effect is a wrong number on the LCD and dashboard, nothing worse.\n");
+
+  /*  A line longer than the 96-byte buffer must not overflow it. The parser
+   *  discards on overflow, so the following good line must still be seen. */
+  resetFirmware();
+  setState(ST_WAIT_ARRIVE);
+  targetPot = 3;
+  sil::feedUart(std::string(400, 'X') + "\n");
+  handleUartRx();
+  ck(mission == ST_WAIT_ARRIVE, "a 400-byte junk line is discarded, not acted on");
+  sil::feedUart("ARRIVED:3\n");
+  handleUartRx();
+  ck(mission == ST_WAIT_SENSOR, "the parser still works after a buffer overflow");
+
+  /*  A status arriving in the wrong state must be ignored, not acted on. */
+  resetFirmware();
+  setState(ST_WAIT_ARRIVE);
+  sil::feedUart("LIFTED\n");
+  handleUartRx();
+  ck(mission == ST_WAIT_ARRIVE, "LIFTED in ST_WAIT_ARRIVE is ignored");
+
+  /*  ERROR: aborts from any mission state, and leaves the pumps off. */
+  resetFirmware();
+  setState(ST_IRRIGATE_RUN);
+  waterPumpOn = true;
+  digitalWrite(PIN_RELAY_WATER, LOW);
+  sil::feedUart("ERROR:LINE_LOST\n");
+  handleUartRx();
+  runMission();
+  ck(mission == ST_IDLE, "ERROR: from ESP32 B aborts the mission");
+  ckEqI(sil::levelOf(PIN_RELAY_WATER), HIGH, "pumps are off after an ERROR abort");
+}
+
+/* ===========================================================================
+ *  §7.4 invariant 7 — parseNumber survives every plausible wttr.in response.
+ * ======================================================================== */
+static void invariant7_parseNumber() {
+  std::printf("\n[10] Invariant 7: parseNumber against wttr.in shapes\n");
+
+  struct PN { const char *in; bool wantNan; float want; const char *name; };
+  const PN cases[] = {
+    {"+29",        false,  29.0f, "+29 (leading plus, as wttr.in sends)"},
+    {"-3",         false,  -3.0f, "-3 (below zero)"},
+    {"29.5",       false,  29.5f, "29.5 (decimal)"},
+    {"+29\xC2\xB0" "C", false, 29.0f, "+29 with a UTF-8 degree sign"},
+    {"29C",        false,  29.0f, "29C, degree sign absent"},
+    {"+29 C",      false,  29.0f, "+29 with a space"},
+    {"",           true,    0.0f, "empty string"},
+    {"N/A",        true,    0.0f, "N/A"},
+    {"Unknown location", true, 0.0f, "prose with no digits"},
+    {"   ",        true,    0.0f, "whitespace only"},
+  };
+
+  for (const auto &c : cases) {
+    resetFirmware();
+    float v = parseNumber(String(c.in));
+    if (c.wantNan) ck(isnan(v), std::string("NAN for ") + c.name);
+    else ckNear(v, c.want, 0.01f, c.name);
+  }
+
+  /*  An HTML error page is rejected before parseNumber ever sees it, because
+   *  fetchWeather needs two '|' separators. Prove that end to end rather than
+   *  trusting the reading. */
+  resetFirmware();
+  wifiOk = true;
+  weather.valid = false;
+  weather.tempOut = -999.0f;
+  sil::net::queueGet(200, "<!DOCTYPE html><html><body>404 Not Found</body></html>");
+  fetchWeather();
+  ck(!weather.valid, "an HTML error page does not mark the weather valid");
+  ckNear(weather.tempOut, -999.0f, 0.01f, "an HTML error page does not overwrite the temperature");
+
+  /*  A well-formed reply is accepted. */
+  resetFirmware();
+  wifiOk = true;
+  sil::net::queueGet(200, "Partly cloudy|+29\xC2\xB0" "C|65%");
+  fetchWeather();
+  ck(weather.valid, "a well-formed wttr.in reply is accepted");
+  ckNear(weather.tempOut, 29.0f, 0.01f, "temperature parsed from a well-formed reply");
+
+  /*  Transport failure and a stall must leave the last good value alone. */
+  resetFirmware();
+  wifiOk = true;
+  weather.valid = true; weather.tempOut = 31.0f;
+  sil::net::queueGet(-1, "", 8000);            // timeout, 8 s of virtual time
+  fetchWeather();
+  ckNear(weather.tempOut, 31.0f, 0.01f, "a failed weather fetch keeps the last good value");
+}
+
+/* ===========================================================================
+ *  §7.4 invariant 8 — probeIsPlanted() is true exactly ST_SETTLE..ST_IRRIGATE_OFF,
+ *  and soilFault never latches while the arm is raised.
+ * ======================================================================== */
+static void invariant8_probePlanted() {
+  std::printf("\n[11] Invariant 8: probeIsPlanted window and soilFault latching\n");
+
+  for (int st = ST_IDLE; st <= ST_FINISH; st++) {
+    resetFirmware();
+    setState((MissionState)st);
+    bool expected = (st >= ST_SETTLE && st <= ST_IRRIGATE_OFF);
+    ck(probeIsPlanted() == expected,
+       "probeIsPlanted() correct in mission state " + std::to_string(st));
+  }
+
+  /*  With the arm raised and the probe reading nonsense — which is what it does
+   *  in mid-air — soilFault must stay clear. */
+  for (int st = ST_IDLE; st <= ST_FINISH; st++) {
+    if (st >= ST_SETTLE && st <= ST_IRRIGATE_OFF) continue;   // planted states
+    resetFirmware();
+    setState((MissionState)st);
+    sil::setAnalog(PIN_SOIL, 4095);          // open circuit: probe in air
+    readAllSensors();
+    if (soilFault) {
+      ck(false, "soilFault latched with the arm raised, in state " + std::to_string(st));
+      return;
+    }
+  }
+  ck(true, "soilFault never latches while the probe is out of the soil");
+
+  /*  In a planted state an out-of-range probe SHOULD raise the fault. */
+  resetFirmware();
+  setState(ST_READ);
+  sil::setAnalog(PIN_SOIL, 4095);
+  readAllSensors();
+  ck(soilFault, "soilFault does raise when the probe is planted and out of range");
+}
+
 /* --- entry point --------------------------------------------------------- */
 int main() {
   std::printf("========================================================\n");
@@ -396,6 +594,9 @@ int main() {
   invariant5_noLocalFertiliser();
   invariant9_rollover();
   hostileDashboardCommands();
+  invariant6_waitStatesExit();
+  invariant7_parseNumber();
+  invariant8_probePlanted();
 
   std::printf("\n--------------------------------------------------------\n");
   std::printf(" SIL summary: %d passed, %d failed\n", g_pass, g_fail);

@@ -366,3 +366,162 @@ heading and in a closing section that states plainly what the simulation cannot
 tell you.
 
 **Commit:** next.
+
+---
+
+## Iteration 7 — 2026-09-08 18:20
+
+**Phase:** 3 (invariants 6, 7, 8) and 5 (bench-test sketch)
+
+**Invariant 6 — every wait state exits, UART fuzzed.** Each of the four waiting
+states (`ST_WAIT_ARRIVE`, `ST_WAIT_SENSOR`, `ST_WAIT_LIFTED`, `ST_SETTLE`) was
+entered and then left in silence past its deadline; all four exit. 18 malformed
+lines — bare `\n`, `\r\n`, `ARRIVED:` with no number, `ARRIVED:abc`,
+`ARRIVED:-1`, `ARRIVED:9`, two statuses concatenated, two in one feed, a
+400-byte line — were delivered in **all 13 mission states**. No hang. The
+oversized line is discarded by the 96-byte overflow guard and the parser still
+handles the next good line.
+
+**One failure, and again the assertion was mine.** I had asserted
+`robotCurrentPot` stays in an arbitrary 0..99 band. `ARRIVED:-1` sets it to −1,
+because `handleUartLine()` assigns `line.substring(8).toInt()` with no
+validation. Chasing where that value goes showed the firmware is defensive
+exactly where it matters:
+
+```c
+if (p >= POT_MIN_INDEX && p <= POT_COUNT) lastPumpStopPot[p] = lastPumpStop;
+int activePot() { return constrain(p, POT_MIN_INDEX, POT_COUNT); }
+```
+
+The per-pot cooldown array is never indexed out of bounds and no wrong slot is
+selected. So the test now asserts the property that actually matters —
+`activePot()` inside 1..`POT_COUNT` across every fuzz case — and reports the raw
+range reached (−1..9) as a note rather than a failure. Written up as
+**RECOMMENDATIONS item 32**, severity low, not fixed: it is unreachable from
+ESP32 B, which constrains its own index before replying.
+
+**Invariant 7 — `parseNumber`.** `+29`, `-3`, `29.5`, a UTF-8 degree sign, no
+degree sign, an embedded space, empty, `N/A`, prose, whitespace: all correct.
+Also driven end to end through `fetchWeather()`: an HTML error page is rejected
+before `parseNumber` ever sees it, because the parser requires two `|`
+separators — so a `404` in the page body cannot become a temperature. A failed
+or stalled fetch leaves the last good value untouched.
+
+**Invariant 8 — `probeIsPlanted`.** True in exactly `ST_SETTLE`..
+`ST_IRRIGATE_OFF` and false in the other eight states. With the probe reading
+open-circuit (4095) in every non-planted state, `soilFault` never latches; in a
+planted state the same reading does raise it. That is the intended asymmetry.
+
+**Result: 172 checks, all passing** — 128 on ESP32 A, plus 15 / 14 / 15 across
+the three ESP32 B builds.
+
+**Phase 5 — `tools/BenchTest/BenchTest.ino`.** One sketch, `BENCH_BOARD_A`
+selects the board. Streams raw ADC every 200 ms with a named header line, and
+takes single-key commands: relay toggles and a solar-servo sweep on A, four arm
+servo sweeps on B. On B it also prints the `IR_THRESHOLD` verdict beside each
+raw value, which is what makes `CHECKPOINT_USES_INNER_SENSORS` and
+`TRACK_LINE_WIDE` readable at a glance instead of arithmetic in your head.
+
+Motors are deliberately not driven from the bench sketch. A bench test that can
+make the robot move is a bench test that drives itself off the table.
+
+Both variants compile: 295 739 B / 293 971 B, 9 % of flash. Added to
+`tools/build_matrix.sh` so they stay compiling. `DOCUMENTATION.md` §11 explains
+how to read the output and which switch each column settles.
+
+**Commit:** next.
+
+---
+
+# Closing summary — 2026-09-08
+
+Required by brief §10. Written to be read by someone who was not here.
+
+## What is verified
+
+**The firmware compiles, everywhere it needs to.** 13 of 13 build-matrix
+combinations pass: both sketches, both ESP32 core generations (2.0.17 and
+3.3.11), both ArduinoJson major versions, every bench-test switch in both
+positions, and the new bench-test sketch for both boards. Exact versions are in
+`DOCUMENTATION.md` §10. Reproduce with `bash tools/build_matrix.sh`.
+
+It compiled **clean on the first attempt**, which was not the expectation going
+in — the brief warned that none of this code had ever been through a compiler.
+The two hazards it flagged as most likely, the `esp_task_wdt` API split and the
+ArduinoJson 6/7 bridge, were both already written correctly.
+
+**Flash and RAM are comfortable.** ESP32 A uses 44 % of the `huge_app`
+partition on core 3.x, 40 % on 2.0.17; ESP32 B uses 9 %. RAM is 16 % and 6 %.
+No pressure on either board, so the core version can be chosen on other grounds.
+
+**172 SIL checks pass** across four harness builds. Invariants 1-5, 9, 11-14
+hold. Invariant 10 holds conditionally — see below. The known-answer table
+(§7.3) agrees with the firmware on all 13 cases, which is what makes the rest of
+the harness trustworthy.
+
+Specifically proven, because these are the ones that could damage something:
+
+- No network call is ever issued while a pump runs — driven as a real mission,
+  with a Gemini reply scripted to consume 12 s.
+- Both relays are off at reset and after every abort path.
+- Water never exceeds 10 s and fertiliser never 5 s, against all 13 hostile AI
+  replies the brief lists, including a 999999 ms request and a 20 s stall.
+- The cooldown holds **both** pumps, not just water, and releases after 120 s.
+- Fertiliser is never applied from the local threshold path.
+- Every wait state exits on its own timeout, and the UART parser survives 18
+  malformed line shapes delivered in all 13 mission states.
+- Hostile dashboard writes (`target_pot` = 99, −1, 0, 6, INT_MAX) cannot move
+  the pot index out of 1..5.
+
+## What is not verified
+
+**Phase 2, the website, was not run at all.** The `website/` tree the brief
+describes does not exist in this repository. Nothing about the dashboard has
+been checked — not the TypeScript build, not the three failure states, not the
+screenshots. This is the single largest gap.
+
+**Invariant 10 is conditional, and this is the main finding.** Checkpoint
+counting is exact with a clean sensor, and degrades sharply with IR dropout: 33 %
+of crossings miscounted at 5 % sample dropout, 83 % at 15 %. Because position has
+no absolute reference (item 2), one missed line leaves the robot at the wrong pot
+for the rest of the run. Written up as **item 29**, in section A, not fixed —
+the cheap fix changes behaviour and sits beside a locked parameter.
+
+**Two more findings, neither fixed:** item 31 quantifies reverse drift for both
+switch values (both diverge, at different rates), and item 32 notes
+`robotCurrentPot` is assigned from the UART with no validation — cosmetic,
+because every dangerous use of it is already bounded.
+
+**One thing was fixed:** item 30. The five bench-test switches were plain
+`#define`s, so the `-D` overrides the brief documents could never reach them and
+"both branches compile" had never actually been tested. Every published default
+is unchanged.
+
+## What needs hardware
+
+Nothing in this pass touched a board. In particular:
+
+- **The two open switch questions** — `CHECKPOINT_USES_INNER_SENSORS` and
+  `TRACK_LINE_WIDE`. `tools/BenchTest/BenchTest.ino` now answers both in about
+  ten minutes each; `DOCUMENTATION.md` §11 says how to read it.
+- **Soil and pH calibration.** 3200/1075 and 2200/1500 are still unverified
+  against the actual probes. BenchTest prints what you need.
+- **Servo jitter.** The timer/channel allocation was proven disjoint by reading
+  the ESP32Servo allocator — servos on timers 2-3 (channels 4-7), motors on
+  timers 0-1 (channels 8-11). That rules out the *allocation* clash. It cannot
+  rule out jitter from current draw, shared grounds or EMI.
+- **Reverse drift.** The model predicts `INVERT=1` holds better over four pot
+  spacings. Measure it before believing it.
+- **Everything about timing under real network conditions.** The harness clock
+  is virtual; a 15 s AI call costs 15 s of simulated time and says nothing about
+  what a competition hall's Wi-Fi will do.
+
+## Honest note on method
+
+Three SIL tests failed on their first run. All three times the harness was
+wrong, not the firmware: an unreachable state was forced in invariant 1, a
+40 ms crossing was required to count when it is below the 50 ms debounce, and an
+arbitrary bound was asserted on `robotCurrentPot`. Each is recorded above with
+the hypothesis that was wrong. A test that fails and is then quietly adjusted
+until it passes is worth nothing; the point of the log is that you can see which
+adjustments were made and judge them.

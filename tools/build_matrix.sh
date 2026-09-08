@@ -98,6 +98,12 @@ if [[ "$which" == *B* ]]; then
   build "B_core3_single_pwm"   "$B" 3 na "-DMOTOR_DRIVER_DUAL_PWM=0"
 fi
 
+#  The bench-test aid is not robot firmware, but it has to compile for both
+#  boards or it is no use to anyone on a deadline.
+BT=tools/BenchTest
+build "BenchTest_boardA"     "$BT" 3 na "-DBENCH_BOARD_A=1"
+build "BenchTest_boardB"     "$BT" 3 na "-DBENCH_BOARD_A=0"
+
 echo
 echo "| Combination | Result | Flash (B) | RAM (B) | Warnings | of which sketch |"
 echo "|-------------|--------|-----------|---------|----------|-----------------|"

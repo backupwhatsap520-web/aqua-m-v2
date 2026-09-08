@@ -28,11 +28,11 @@ the code that ships. A copied-out version would drift within a week.
 
 | Harness build | Checks | Result |
 |---------------|--------|--------|
-| ESP32 A | 87 | all pass |
+| ESP32 A | 128 | all pass |
 | ESP32 B, `TRACK_LINE_WIDE=1` (default) | 15 | all pass |
 | ESP32 B, `TRACK_LINE_WIDE=0` | 14 | all pass |
 | ESP32 B, `REVERSE_STEER_INVERT=1` | 15 | all pass |
-| **Total** | **131** | **all pass** |
+| **Total** | **172** | **all pass** |
 
 Invariants from brief §7.4–7.5, by number:
 
@@ -43,9 +43,9 @@ Invariants from brief §7.4–7.5, by number:
 | 3 | Durations clamped whatever the AI returns | tested, holds |
 | 4 | Cooldown holds **both** pumps, sets `fertilizer_deferred` | tested, holds |
 | 5 | Fertiliser never applied from the local path | tested, holds |
-| 6 | Every wait state exits (UART fuzzing) | **not yet covered** |
-| 7 | `parseNumber()` survives every wttr.in shape | **not yet covered** |
-| 8 | `probeIsPlanted()` true exactly ST_SETTLE..ST_IRRIGATE_OFF | **not yet covered** |
+| 6 | Every wait state exits (UART fuzzing) | tested, holds |
+| 7 | `parseNumber()` survives every wttr.in shape | tested, holds |
+| 8 | `probeIsPlanted()` true exactly ST_SETTLE..ST_IRRIGATE_OFF | tested, holds |
 | 9 | Rollover at `0xFFFFFFFF` | tested, holds |
 | 10 | One checkpoint counted exactly once | tested — **see §3, it is conditional** |
 | 11 | `currentPot` stays 1..5 under any command sequence | tested, holds |
