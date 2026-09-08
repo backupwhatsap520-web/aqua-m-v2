@@ -1,19 +1,25 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowsLeftRight, CloudSlash, ShieldCheck } from '@phosphor-icons/react';
+import {
+  ArrowsLeftRight,
+  CloudSlash,
+  Medal,
+  ShieldCheck,
+  Users,
+} from '@phosphor-icons/react';
 import type { DeviceFeed } from '../hooks/useDeviceData';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 
-/*  The judge-facing side of the dashboard.
+/*  Everything about the project, below the dashboard.
  *
- *  Deliberately NOT built from the same repeated card grid as the monitoring
- *  tab. Four sections, four different layout families: asymmetric split hero,
- *  offset two-column with a numbered spine, a horizontal step sequence, and a
- *  figures-and-prose block. One eyebrow on the whole page.
+ *  Six sections, six different layout families: an offset two-column with a
+ *  spine, a horizontal step sequence, a before-and-after split, an award
+ *  block, a team plate, and a figures-and-prose closer. Repeating one layout
+ *  is what makes a page read as generated, so none of them repeats.
  */
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-/*  Scroll reveal, for sections below the fold. */
 const reveal = (delay = 0) => ({
   initial: { opacity: 0, y: 18 },
   whileInView: { opacity: 1, y: 0 },
@@ -21,16 +27,29 @@ const reveal = (delay = 0) => ({
   transition: { duration: 0.55, delay, ease: EASE },
 });
 
-/*  Kept for reference: the hero that used to live here moved into the page
- *  shell above the dashboard frame, and animates on entry there. */
+/*  Names as the team gave them, in the order given. Deliberately NOT captioned
+ *  onto faces in the photograph: nobody has told us who is who, and putting
+ *  the wrong name under a person is worse than leaving the group uncaptioned. */
+const TEAM = [
+  'Rizqullah Aufa Rozhie',
+  "Nu'man Abdurrahman",
+  'Fachri Tri Putra',
+  'Pradani Adzfar Hafidz',
+  'Muhammad Danendra Kurnia Ramadhan',
+  'Chico Rafif Fakhrishi',
+];
 
 export function PortfolioTab(_props: { feed: DeviceFeed }) {
   const reduce = useReducedMotion();
   const anim = (delay = 0) => (reduce ? {} : reveal(delay));
 
+  /*  The photograph is dropped in by the team rather than bundled, so the page
+   *  has to survive it not being there yet. */
+  const [photoMissing, setPhotoMissing] = useState(false);
+
   return (
     <div className="space-y-phi-6 pb-phi-5 sm:space-y-phi-7">
-      {/* --- how it decides: offset columns with a numbered spine ------- */}
+      {/* --- 1. how it decides: offset columns with a spine -------------- */}
       <section className="grid gap-phi-5 lg:grid-cols-[1fr_1.618fr] lg:gap-phi-6">
         <motion.h2
           {...anim()}
@@ -39,30 +58,26 @@ export function PortfolioTab(_props: { feed: DeviceFeed }) {
           Two ways to decide, and a rule about which one wins
         </motion.h2>
 
-        <div className="space-y-8">
+        <div className="space-y-phi-5">
           {[
             {
-              icon: <CloudSlash size={20} className="text-accent" />,
+              icon: <CloudSlash size={20} className="text-cyan-deep" />,
               head: 'Gemini decides how long to water',
-              body: 'The board posts soil, pH, temperature, humidity, light and the local weather straight to Google AI Studio. No server sits in between. The reply is clamped to ten seconds of water and five of fertiliser before it can reach a pump.',
+              body: 'The board posts soil moisture, pH, temperature, humidity, light and the local weather straight to Google AI Studio. No server sits in between. The reply is clamped to ten seconds of water and five of fertiliser before it can reach a pump.',
             },
             {
-              icon: <ArrowsLeftRight size={20} className="text-accent" />,
+              icon: <ArrowsLeftRight size={20} className="text-cyan-deep" />,
               head: 'The board decides when the network fails',
               body: 'Below 30 percent soil moisture it waters for eight seconds, between 30 and 60 for four, above that not at all. Over 35 degrees adds two seconds. Fertiliser has no offline rule on purpose: guessing a nutrient dose from a moisture reading is worse than waiting.',
             },
             {
-              icon: <ShieldCheck size={20} className="text-accent" />,
+              icon: <ShieldCheck size={20} className="text-cyan-deep" />,
               head: 'The firmware always has the last word',
               body: 'Relays are active-low, so a reset opens them. A watchdog runs every loop and can only ever turn a pump off. No network call is issued while a pump is running, because a slow reply would outlast the watering it was meant to control.',
             },
           ].map((item, i) => (
-            <motion.article
-              key={item.head}
-              {...anim(0.08 * i)}
-              className="rule-l pl-5 sm:pl-6"
-            >
-              <div className="mb-2 flex items-center gap-2.5">
+            <motion.article key={item.head} {...anim(0.08 * i)} className="rule-l pl-phi-4">
+              <div className="mb-phi-2 flex items-center gap-phi-2">
                 {item.icon}
                 <h3 className="text-base font-medium text-ink">{item.head}</h3>
               </div>
@@ -72,7 +87,7 @@ export function PortfolioTab(_props: { feed: DeviceFeed }) {
         </div>
       </section>
 
-      {/* --- 3. the run, as a horizontal sequence -------------------------- */}
+      {/* --- 2. the run, as a horizontal sequence ------------------------ */}
       <section>
         <motion.h2
           {...anim()}
@@ -83,21 +98,151 @@ export function PortfolioTab(_props: { feed: DeviceFeed }) {
 
         <div className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { t: 'Drive', d: 'ESP32 A sends TARGET:3. The motion board counts checkpoint lines under the rail until it reaches the third.' },
-            { t: 'Plant', d: 'The arm lowers the probe into the soil and reports SENSOR_READY. Two seconds to settle before anything is read.' },
-            { t: 'Read and decide', d: 'Soil, pH, air and light are sampled, then either Gemini or the local rule sets a duration.' },
-            { t: 'Water and lift', d: 'The pump runs for exactly that long, the arm lifts, and the robot is free to move again.' },
+            {
+              t: 'Drive',
+              d: 'ESP32 A sends TARGET:3. The motion board counts checkpoint lines under the rail until it reaches the third.',
+            },
+            {
+              t: 'Plant',
+              d: 'The arm lowers the probe into the soil and reports SENSOR_READY. Two seconds to settle before anything is read.',
+            },
+            {
+              t: 'Read and decide',
+              d: 'Soil, pH, air and light are sampled, then either Gemini or the local rule sets a duration.',
+            },
+            {
+              t: 'Water and lift',
+              d: 'The pump runs for exactly that long, the arm lifts, and the robot is free to move again.',
+            },
           ].map((step, i) => (
-            <motion.div key={step.t} {...anim(0.06 * i)} className="bg-paper-2 p-5">
-              <span className="num mb-3 block text-xs text-accent">{`0${i + 1}`}</span>
-              <h3 className="mb-2 text-sm font-medium text-ink">{step.t}</h3>
+            <motion.div key={step.t} {...anim(0.06 * i)} className="bg-paper-2 p-phi-4">
+              <span className="num mb-phi-3 block text-xs text-cyan-deep">{`0${i + 1}`}</span>
+              <h3 className="mb-phi-2 text-sm font-medium text-ink">{step.t}</h3>
               <p className="text-[13px] leading-relaxed text-ink-muted">{step.d}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* --- 4. what is proven, in figures and plain sentences ------------- */}
+      {/* --- 3. V1 to V2: a before and after ----------------------------- */}
+      <section>
+        <motion.h2
+          {...anim()}
+          className="mb-phi-5 max-w-2xl text-phi-lg font-semibold tracking-tightest text-ink sm:text-phi-xl"
+        >
+          The first one could not move
+        </motion.h2>
+
+        <div className="grid gap-phi-4 md:grid-cols-2">
+          <motion.div {...anim()} className="surface p-phi-4 sm:p-phi-5">
+            <p className="num mb-phi-3 text-xs uppercase tracking-[0.16em] text-ink-muted">
+              Aqua-M V1
+            </p>
+            <p className="mb-phi-3 text-phi-lg font-semibold text-ink">One pot</p>
+            <p className="text-sm leading-relaxed text-ink-soft">
+              V1 stood in one place and looked after the plant in front of it. It could read
+              the soil and it could water, and for a single pot that was enough. Add a second
+              plant and you needed a second robot, which is not a system so much as a
+              duplicate.
+            </p>
+          </motion.div>
+
+          <motion.div
+            {...anim(0.1)}
+            className="surface border-cyan/35 bg-cyan-wash p-phi-4 sm:p-phi-5"
+          >
+            <p className="num mb-phi-3 text-xs uppercase tracking-[0.16em] text-cyan-deep">
+              Aqua-M V2
+            </p>
+            <p className="mb-phi-3 text-phi-lg font-semibold text-ink">Five pots, one robot</p>
+            <p className="text-sm leading-relaxed text-ink-soft">
+              V2 moves. A rail, a second board for motion, checkpoint lines to count by, and
+              an arm that plants the probe at each stop. One set of sensors and one pump now
+              serve five plants, and the decision is made per pot rather than per machine.
+            </p>
+          </motion.div>
+        </div>
+
+        <motion.p {...anim(0.16)} className="mt-phi-4 max-w-2xl text-sm leading-relaxed text-ink-muted">
+          Almost everything hard about V2 comes from that one change. A machine that stays
+          still always knows where it is. A machine that moves has to work it out, which is
+          why checkpoint counting, the UART link between the two boards and the mission state
+          machine all exist.
+        </motion.p>
+      </section>
+
+      {/* --- 4. the award ------------------------------------------------ */}
+      <section>
+        <motion.div
+          {...anim()}
+          className="surface flex flex-col gap-phi-4 p-phi-5 sm:flex-row sm:items-center sm:gap-phi-6"
+        >
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-leaf-wash">
+            <Medal size={30} className="text-leaf-deep" weight="duotone" />
+          </div>
+          <div>
+            <h2 className="text-phi-lg font-semibold tracking-tightest text-ink">
+              Gold medal, and a special award
+            </h2>
+            <p className="mt-phi-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
+              Aqua-M V1 took a gold medal at the competition held at UNIKOM Bandung, together
+              with the ICGI special award. V2 is the version built after that, and the reason
+              it exists is the limitation the judges were looking at: a robot that can only
+              ever tend the plant directly in front of it.
+            </p>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* --- 5. the team ------------------------------------------------- */}
+      <section className="grid gap-phi-5 lg:grid-cols-phi lg:gap-phi-6">
+        <motion.div {...anim()}>
+          <div className="overflow-hidden rounded-xl border border-line bg-paper-3">
+            {photoMissing ? (
+              <div className="flex aspect-[4/5] flex-col items-center justify-center gap-phi-3 p-phi-5 text-center">
+                <Users size={28} className="text-ink-muted" />
+                <p className="text-sm text-ink-muted">
+                  Team photograph goes here.
+                  <br />
+                  Save it as <code className="num text-[12px]">website/public/team.jpg</code>.
+                </p>
+              </div>
+            ) : (
+              <img
+                src="/team.jpg"
+                alt="The six students who built Aqua-M, standing together in school uniform."
+                className="h-auto w-full object-cover"
+                loading="lazy"
+                onError={() => setPhotoMissing(true)}
+              />
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div {...anim(0.1)}>
+          <h2 className="mb-phi-4 text-phi-lg font-semibold tracking-tightest text-ink sm:text-phi-xl">
+            Six people built this
+          </h2>
+          <p className="mb-phi-4 max-w-md text-sm leading-relaxed text-ink-soft">
+            Students at MAN 4 Jakarta. The paper, the firmware, the rail and this dashboard
+            are all theirs.
+          </p>
+          <ul className="divide-y divide-line border-y border-line">
+            {TEAM.map((name, i) => (
+              <motion.li
+                key={name}
+                {...anim(0.04 * i)}
+                className="flex items-baseline gap-phi-3 py-phi-3"
+              >
+                <span className="num w-6 shrink-0 text-xs text-ink-muted">{`0${i + 1}`}</span>
+                <span className="text-sm text-ink">{name}</span>
+              </motion.li>
+            ))}
+          </ul>
+        </motion.div>
+      </section>
+
+      {/* --- 6. what is proven, in figures and plain sentences ----------- */}
       <section className="grid gap-phi-5 lg:grid-cols-phi lg:gap-phi-6">
         <div>
           <motion.h2
@@ -107,34 +252,46 @@ export function PortfolioTab(_props: { feed: DeviceFeed }) {
             What has actually been checked
           </motion.h2>
 
-          <motion.dl {...anim(0.08)} className="grid grid-cols-2 gap-6">
+          <motion.dl {...anim(0.08)} className="grid grid-cols-2 gap-phi-5">
             {[
-              { n: '13', l: 'build combinations, all passing', s: 'two ESP32 core generations, two ArduinoJson versions' },
-              { n: '172', l: 'software-in-the-loop checks', s: 'every safety invariant among them' },
-              { n: '44%', l: 'of flash used on ESP32 A', s: 'room left for the whole system again' },
+              {
+                n: '13',
+                l: 'build combinations, all passing',
+                s: 'two ESP32 core generations, two ArduinoJson versions',
+              },
+              {
+                n: '172',
+                l: 'software-in-the-loop checks',
+                s: 'every safety invariant among them',
+              },
+              {
+                n: '44%',
+                l: 'of flash used on ESP32 A',
+                s: 'room left for the whole system again',
+              },
               { n: '0', l: 'hardware measurements', s: 'the boards had not arrived' },
             ].map((f) => (
               <div key={f.l}>
                 <dt className="num text-phi-lg font-medium text-ink sm:text-phi-xl">{f.n}</dt>
-                <dd className="mt-1.5 text-sm text-ink-soft">{f.l}</dd>
-                <dd className="mt-0.5 text-xs leading-relaxed text-ink-muted">{f.s}</dd>
+                <dd className="mt-phi-2 text-sm text-ink-soft">{f.l}</dd>
+                <dd className="mt-phi-1 text-xs leading-relaxed text-ink-muted">{f.s}</dd>
               </div>
             ))}
           </motion.dl>
         </div>
 
-        <motion.div {...anim(0.12)} className="space-y-4 text-sm leading-relaxed text-ink-soft">
+        <motion.div {...anim(0.12)} className="space-y-phi-3 text-sm leading-relaxed text-ink-soft">
           <p>
             Every figure on this page comes from simulation, not from a robot. The firmware
             was compiled and driven on a PC with a virtual clock, which is how a two-minute
             pump cooldown can be tested in one line instead of two minutes.
           </p>
           <p>
-            That rules out whole classes of logic bug. It does not tell you what the pump
-            does at twenty percent battery, whether the infrared sensors survive stage
-            lighting, or how the servo behaves when the motors draw current.
+            That rules out whole classes of logic bug. It does not tell you what the pump does
+            at twenty percent battery, whether the infrared sensors survive stage lighting, or
+            how the servo behaves when the motors draw current.
           </p>
-          <p className="border-l-2 border-warn/40 pl-4 text-ink-muted">
+          <p className="border-l-2 border-warn/40 pl-phi-3 text-ink-muted">
             One finding is worth knowing before a demo. Under simulated infrared dropout the
             checkpoint counter misses a third of crossings at five percent sample loss. Since
             position is counted rather than measured, one missed line leaves the robot at the
