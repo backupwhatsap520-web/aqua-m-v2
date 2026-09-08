@@ -243,3 +243,67 @@ per-core flash/RAM figures, the reproduce command, and the OneDrive sketchbook
 trap that blocked library installs on this machine.
 
 **Commit:** next.
+
+---
+
+## Iteration 5 — 2026-09-08 16:47
+
+**Phase:** 3 (SIL harness)
+**Target:** stand up the harness for ESP32 A and get the §7.3 known-answer table
+plus the priority invariants from §13 (1, 2, 3) running.
+
+**Environment added:** g++ 16.1.0 (WinLibs MinGW-w64 UCRT). There was no host
+C++ compiler on this machine — only the xtensa cross-compilers, which produce
+ESP32 binaries that cannot run here.
+
+**Built:** `sil/stubs/` (Arduino core, virtual clock, GPIO trace, injectable
+sensors, fake Serial2, scriptable network with latency, Firebase, DHT, BH1750,
+LCD, ESP32Servo, watchdog), `sil/harness_a.cpp`, `sil/build.sh`.
+
+The sketch is `#include`d directly as §7.1 requires, so the harness cannot drift
+away from what ships. ArduinoJson is the real library, not a stub.
+
+**First compile: 13 errors, all in my stubs, none in the firmware.** Fixed by
+promoting `constrain`/`min`/`max` to mixed-type templates (Arduino's are
+macros), pulling `isnan` into the global namespace, adding `HTTP_CODE_OK`, the
+`BH1750::Mode` enum, an `Arduino.h` shim, and `concat`/`read`/`readBytes` on the
+stub `String` so ArduinoJson's `Writer<::String>` and `Reader<::String>`
+specialisations bind instead of the stream fallback.
+
+**Then: 83 passed, 1 failed — and the failure was mine, not the firmware's.**
+
+**Hypothesis (wrong):** invariant 1 is violated — `Firebase.updateNode` was
+reached with `waterPumpOn` true.
+
+**Why it was wrong:** the test forced `waterPumpOn = true` while leaving
+`mission = ST_IDLE`, which is a state the firmware never reaches. `loop()`
+confines every network call behind `if (mission == ST_IDLE)`, and pumps only run
+inside `ST_IRRIGATE_ON`/`ST_IRRIGATE_RUN`, with `ST_IRRIGATE_OFF` calling
+`allPumpsOff()` before the machine returns to idle. I had constructed an
+unreachable combination and then measured it.
+
+**Change:** rewrote the test to drive a **real mission** end to end — the
+harness plays ESP32 B over the fake UART, answering `TARGET:2` with
+`MOVING`/`ARRIVED:2`, then `SENSOR_READY`, then `LIFTED` — with the AI reply
+scripted to cost 12 s of virtual time and request the full 10 s of water. Added
+two guards against a vacuous pass: the mission must reach `ST_IDLE`, and at
+least one iteration must have had a pump actually running.
+
+**Result: 87 passed, 0 failed.** Invariant 1 holds under a genuine mission with
+a deliberately slow AI call. Also asserted structurally: a pump is never on
+while `mission == ST_IDLE`, which is the reason the invariant holds rather than
+a coincidence of timing.
+
+**Covered so far:** §7.3 known-answer table in full (soil, pH, local rule);
+invariant 1 (no network while pumping), 2 (safe reset and abort), 3 (duration
+clamping against all 13 hostile AI replies the brief lists), 4 (cooldown holds
+both pumps, and releases after 120 s), 5 (no local fertiliser, swept over a
+21 x 8 soil/temperature grid), 9 (rollover across `0xFFFFFFFF`), and the §8.1
+security lens on hostile dashboard commands (`target_pot` = 99, -1, 0, 6,
+INT_MAX, and an injection-shaped action string).
+
+**Not yet covered:** invariants 6, 7, 8 (UART fuzzing, `parseNumber`,
+`probeIsPlanted`) and the whole of ESP32 B (10-15), including the Monte Carlo
+checkpoint count and the reverse-drift model.
+
+**Commit:** next.
