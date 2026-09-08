@@ -20,3 +20,6 @@ build/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Skill pihak ketiga (ui-ux-pro-max) - dipasang lokal, tidak ikut repo
+.claude/skills/
