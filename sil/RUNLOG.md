@@ -525,3 +525,66 @@ arbitrary bound was asserted on `robotCurrentPot`. Each is recorded above with
 the hypothesis that was wrong. A test that fails and is then quietly adjusted
 until it passes is worth nothing; the point of the log is that you can see which
 adjustments were made and judge them.
+
+---
+
+## Iteration 8 — 2026-09-08 20:15
+
+**Phase:** 2 (website) — **this supersedes the "Phase 2 was not run" line in the
+closing summary above.** The summary is left as written because this log is
+append-only; read this entry as the correction.
+
+`website/` did not exist, so there was nothing to verify. It has now been built
+to the description in brief §6: Vite + React + TypeScript + Tailwind + Firebase,
+against the schema in `DOCUMENTATION.md` §8, with field names read out of
+`uploadSensors` / `uploadStatus` / `uploadDecision` rather than guessed.
+
+**Two deviations from the brief, both stated rather than absorbed silently:**
+React 19 instead of 18 and Firebase 12 instead of 11, because the site did not
+exist to match and these are the current versions. The modular Firebase imports
+are unchanged between 11 and 12; either can be pinned if the team prefers.
+
+**§6.1 risk areas, as found:**
+
+1. `ChartOptions<'line'>` — typed explicitly rather than inferred, so
+   `interaction.mode` and the scale shapes are checked. `tsc -b` clean.
+2. `useCountUp` — written with all mutation inside effects and the rAF
+   callback, never during render, which is what the brief flags in the earlier
+   version. A first attempt still called `setState` synchronously in the
+   reduced-motion branch; oxlint caught it and the value is now derived instead.
+3. `Drop` in `PortfolioTab` — kept as its own component so `useTransform` is
+   never called inside `.map()`. Commented so the next person does not "simplify"
+   it back into the loop.
+4. Type-only import of `MotionValue` — from `motion/react`, since `framer-motion`
+   is now published as `motion`.
+5. Firebase v11+ modular imports and `import.meta.env` typings in
+   `vite-env.d.ts` — both present, build clean.
+6. Tailwind content globs — verified by grepping the **built** CSS, not the
+   config: `06D6A0`, `4CC9F0`, `0a0f1a`, the gradient, `backdrop-filter` and the
+   Fira faces are all present in `dist/assets/*.css`.
+
+**§6.2 failure paths.** All three states were driven and screenshotted. Because
+two of them need Firebase credentials this machine does not have, three
+development-only fixtures were added (`?mock=empty|partial|full`, gated on
+`import.meta.env.DEV`). They are not reachable from a production build.
+
+| State | Result |
+|-------|--------|
+| No `.env` | Skeletons plus "No Firebase settings found. Copy .env.example to .env and fill it in." No white screen. |
+| Connected, `/device` empty | Badge reads Live, every card a skeleton, no crash on null. |
+| Partial data | Sensors render, `ai_decision` and `weather` show skeletons, invalid pH named as a fault. |
+
+**One real bug, mine, found by the partial-data state.** `StatCard` checked
+`loading` before `invalid`. A fault arrives with the value withheld — an
+out-of-range pH is written as `-1` and mapped to `undefined` — so the card
+rendered a skeleton that never resolved. A judge would have seen a card stuck
+loading instead of "reading out of range". The order is now inverted, with a
+comment saying why.
+
+**Also verified:** keyboard focus visible on the tab switcher and every control
+button, 44x44 px minimum targets, `prefers-reduced-motion` honoured in the built
+CSS and in both `useCountUp` and the `Drop` parallax, no horizontal scroll at
+390 px. `tsc -b`, `npm run build` and `oxlint` all clean.
+
+**Not verified:** anything requiring a live database. The happy path has never
+been driven by a real ESP32 A.
