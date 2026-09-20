@@ -24,6 +24,10 @@ sil/out/
 .claude/skills/
 .agents/
 
+# Python
+__pycache__/
+*.py[cod]
+
 # OS
 .DS_Store
 Thumbs.db

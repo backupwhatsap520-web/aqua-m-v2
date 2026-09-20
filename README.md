@@ -16,7 +16,8 @@ aqua-m-v2/
 ├── firmware/
 │   ├── AquaM_ESP32_A/        control hub: sensors, pumps, AI, Firebase, solar
 │   └── AquaM_ESP32_B/        motion unit: line following, checkpoints, arm
-└── website/                  React + TypeScript dashboard
+├── website/                  React + TypeScript dashboard
+└── analysis/                 standalone: Monte Carlo on graduate demand 2026-2036
 ```
 
 ## Before you power anything up
